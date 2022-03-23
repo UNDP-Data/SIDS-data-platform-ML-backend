@@ -1,5 +1,9 @@
 # Do not include azure-functions-worker as it may conflict with the Azure Functions platform
 
-azure-functions
-fastapi
-mimesis
+azure-functions~=1.10.1
+fastapi~=0.75.0
+sklearn
+numpy
+pandas
+plotly==4.8.2
+pycountry
