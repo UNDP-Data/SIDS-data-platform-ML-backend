@@ -1,9 +1,10 @@
 This is a repository from ML learning backend
 
 ### Run Locally
-1. Install Azure core tools - https://github.com/Azure/azure-functions-core-tools
-2. Run `func start host`. This will start the azure function locally.
-3. View swagger API from http://localhost:7071/docs
+1. Install Azure core tools - https://github.com/Azure/azure-functions-core-tools.
+2. Copy dataset files to dataset folder in root directory.
+3. Run `func start host`. This will start the azure function locally.
+4. View swagger API from http://localhost:7071/docs.
 
 ### Test request
 `
