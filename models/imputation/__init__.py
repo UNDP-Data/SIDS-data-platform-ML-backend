@@ -2,15 +2,12 @@ from fastapi import APIRouter
 
 from common.definitions import TrainResponse, TrainRequest
 from models.imputation.KNN_Based import query_and_train
-from common.utils import data_importer
 
 router = APIRouter(
     prefix="/imputation",
     tags=["Imputation"],
     responses={404: {"description": "Not found"}},
 )
-
-wb_data,indicatorMeta, datasetMeta,indicatorData = data_importer(model_type="knn")
 
 @router.get('/params')
 async def imputation_params():

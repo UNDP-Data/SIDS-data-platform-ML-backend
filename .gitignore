@@ -1,8 +1,9 @@
 .venv
 .idea
-.vscode
+
 .DS_Store
 **/*/.DS_Store
 **/*/__pycache__/*
 datasets/*.csv
 datasets/*.json
+.python_packages

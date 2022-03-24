@@ -24,9 +24,13 @@ percent=80
 
 
 # Import data
-wb_data,indicatorMeta, datasetMeta,indicatorData = data_importer(model_type="knn")
+wb_data, indicatorMeta, datasetMeta, indicatorData = None
+
 
 def query_and_train(manual_predictors, target_year, target,interpolator,scheme,n_estimators,model,interval, ind_meta=indicatorMeta):
+    global wb_data, indicatorMeta, datasetMeta, indicatorData
+    if wb_data is None:
+        wb_data, indicatorMeta, datasetMeta, indicatorData = data_importer(model_type="knn")
 
     print(target)
     t0 = time.time()
