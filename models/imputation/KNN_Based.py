@@ -24,7 +24,10 @@ percent=80
 
 
 # Import data
-wb_data, indicatorMeta, datasetMeta, indicatorData = None
+wb_data = None
+indicatorMeta = None
+datasetMeta = None
+indicatorData = None
 
 
 def query_and_train(manual_predictors, target_year, target,interpolator,scheme,n_estimators,model,interval, ind_meta=indicatorMeta):

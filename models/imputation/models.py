@@ -16,9 +16,6 @@ from common.constants import SIDS
 #import plotly.graph_objs as go
 from common.utils import data_importer
 
-wb_data,indicatorMeta, datasetMeta,indicatorData = data_importer(model_type="knn")
-
-
 def model_trainer(X_train,X_test,y_train,seed,n_estimators,t0,target_year,target, model,interval):
 	"""
     Train the selected model, cross validate, score and generate a 90% prediction interval based on bootstrapped residuals.
