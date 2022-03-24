@@ -7,3 +7,4 @@ numpy
 pandas
 plotly==4.8.2
 pycountry
+px

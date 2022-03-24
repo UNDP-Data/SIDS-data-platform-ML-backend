@@ -1,22 +1,21 @@
+import io
 import time
 from textwrap import wrap
 
 # For plotting
-import plotly.express as px
 #import plotly.graph_objs as go
 
 
 # For helper functions
-from data.constants import SIDS
+from starlette.responses import StreamingResponse
+
+from common.constants import SIDS
 from models.imputation.models import model_trainer
-from utils import *
+from common.utils import *
 
 # For data manipulation
 import pandas as pd
 from sklearn.decomposition import PCA
-
-
-import pycountry
 
 # connect to app
 
@@ -127,4 +126,5 @@ def query_and_train(manual_predictors, target_year, target,interpolator,scheme,n
     exec_time = t1 - t0
     alert_msg = f"Trained and predicted in: {exec_time:.2f}s."
 
-    return alert_msg,SI_index, avp_fig, coef_fig,query_card,bar_fig_list[0],bar_fig_list[1],bar_fig_list[2]
+    print(alert_msg, SI_index, avp_fig, coef_fig, query_card)
+    return alert_msg,SI_index, avp_fig.to_html(), coef_fig.to_html(),query_card.to_html(),bar_fig_list[0] if len(bar_fig_list) > 0 else None, bar_fig_list[1] if len(bar_fig_list) > 1 else None,bar_fig_list[2] if len(bar_fig_list) > 2 else None

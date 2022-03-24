@@ -237,7 +237,7 @@ def cou_ind_miss(Data):
 
     return countyIndicator_missingness
 
-def data_importer(model_type="series",path = "/Volumes/My Passport for Mac/jobs/UNDP/ML-IndicatorData/"):
+def data_importer(model_type="series",path = "./datasets/"):
     """
         Import csv files and restrructure the data into a country by indcator format. Model_type will be expanded upon.
     """
@@ -308,23 +308,23 @@ def bar_plotter(X_train,X_test,y_train,predictions,SIDS):
     bar_dataset_x= pd.concat([pd.Series(train_countries, name="Country"),pd.Series(countries,name="Country")],axis=0)
     bar_dataset_y= pd.concat([pd.Series(y_train.values, name="value"),pd.Series(predictions, name="value")],axis=0)
     bar_dataset_z= pd.concat([pd.Series(["Observed"]*y_train.shape[0], name="Predicted or Observed"),pd.Series(["Predicted"]*len(countries), name="Predicted or Observed")])
-    bar_dataset = pd.concat([bar_dataset_x,bar_dataset_y, bar_dataset_z],axis=1, join='inner')
+    # bar_dataset = pd.concat([bar_dataset_x,bar_dataset_y, bar_dataset_z],axis=1, join='inner')
 
     # Add location of the SIDS country
-    bar_dataset["Country Location"] = bar_dataset["Country"].apply(lambda x:locator(x))
+    # bar_dataset["Country Location"] = bar_dataset["Country"].apply(lambda x:locator(x))
 
     # Split by location and plot separate bar charts
-    bar_dataset_AIC = bar_dataset[bar_dataset['Country Location']=='AIS']
-    bar_dataset_Caribbean= bar_dataset[bar_dataset['Country Location']=='Caribbean']
-    bar_dataset_Pacific = bar_dataset[bar_dataset['Country Location']=='Pacific']
-
-
-    datasets=[bar_dataset_AIC,bar_dataset_Caribbean,bar_dataset_Pacific]
+    # bar_dataset_AIC = bar_dataset[bar_dataset['Country Location']=='AIS']
+    # bar_dataset_Caribbean= bar_dataset[bar_dataset['Country Location']=='Caribbean']
+    # bar_dataset_Pacific = bar_dataset[bar_dataset['Country Location']=='Pacific']
+    #
+    #
+    # datasets=[bar_dataset_AIC,bar_dataset_Caribbean,bar_dataset_Pacific]
     bar_fig_list=[]
-    for i in datasets:
-        bars=[]
-        colors = {'Predicted': '#0D2A63',
-                'Observed': '#1F77B4'}
+    # for i in datasets:
+    #     bars=[]
+    #     colors = {'Predicted': '#0D2A63',
+    #             'Observed': '#1F77B4'}
         # for label, label_df in i.groupby('Predicted or Observed'):
         #     bars.append(go.Bar(y=label_df["Country"],
         #                         x=label_df["value"],

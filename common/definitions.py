@@ -11,16 +11,16 @@ class TrainRequest(BaseModel):
     scheme: str
     estimators: int
     model: str
-    interval: int
+    interval: str
     ind_metadata: Optional[List]
 
 
 class TrainResponse(BaseModel):
     alert_msg: str
-    si_index: int
+    si_index: Optional[int]
     avp_fig: bytes
-    coefficient_fig: bytes
-    query_card: bytes
-    bar_figure_1: bytes
-    bar_figure_2: bytes
-    bar_figure_3: bytes
+    coefficient_fig: Optional[str]
+    query_card: Optional[str]
+    bar_figure_1: Optional[str]
+    bar_figure_2: Optional[str]
+    bar_figure_3: Optional[str]

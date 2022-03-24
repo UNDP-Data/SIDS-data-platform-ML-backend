@@ -2,21 +2,21 @@
 
 
 # For plotting
-from sklearn.ensemble import GradientBoostingRegressor
+import pandas as pd
+import numpy as np
+import pycountry
+from sklearn.ensemble import GradientBoostingRegressor, ExtraTreesRegressor, RandomForestRegressor
 # from sklearn
 from sklearn.model_selection import GridSearchCV, cross_val_predict
 from sklearn.pipeline import Pipeline
 
 # For helper functions
-from data.constants import SIDS
-from utils import *
+from common.constants import SIDS
 
 #import plotly.graph_objs as go
+from common.utils import data_importer
 
 wb_data,indicatorMeta, datasetMeta,indicatorData = data_importer(model_type="knn")
-
-
-color_continuous_scale=px.colors.sequential.Blues
 
 
 def model_trainer(X_train,X_test,y_train,seed,n_estimators,t0,target_year,target, model,interval):
