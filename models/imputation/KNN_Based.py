@@ -30,10 +30,13 @@ datasetMeta = None
 indicatorData = None
 
 
-def query_and_train(manual_predictors, target_year, target,interpolator,scheme,n_estimators,model,interval, ind_meta=indicatorMeta):
+def query_and_train(manual_predictors, target_year, target,interpolator,scheme,n_estimators,model,interval, ind_meta):
     global wb_data, indicatorMeta, datasetMeta, indicatorData
     if wb_data is None:
         wb_data, indicatorMeta, datasetMeta, indicatorData = data_importer(model_type="knn")
+
+    if ind_meta is None:
+        ind_meta = indicatorMeta
 
     print(target)
     t0 = time.time()
