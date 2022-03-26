@@ -24,3 +24,11 @@ class TrainResponse(BaseModel):
     bar_figure_1: Optional[str]
     bar_figure_2: Optional[str]
     bar_figure_3: Optional[str]
+
+
+class ModelResponse(BaseModel):
+    avg_rmse: Optional[float]
+    rmse: Optional[float]
+    model_feature_importance: Optional[List[int]]
+    model_feature_names: Optional[List[str]]
+    prediction: Optional[dict]
