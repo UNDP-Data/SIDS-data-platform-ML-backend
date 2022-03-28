@@ -4,9 +4,9 @@ from pydantic import BaseModel, Field
 
 
 class TrainRequest(BaseModel):
-    manual_predictors: Optional[List[str]] = Field(..., title="List of predictors (for Manual)",
+    manual_predictors: Optional[List[str]] = Field(None, title="List of predictors (for Manual)",
                                                    example=["wdi-AG.LND.AGRI.K2"])
-    number_predictor: Optional[int] = Field(..., title="Number of predictors (for Automatic)", example=10)
+    number_predictor: Optional[int] = Field(None, title="Number of predictors (for Automatic)", example=10)
     target_year: str = Field(..., title="The year under consideration", example="2001")
     target: str = Field(..., title="Indicator whose values will be imputed", example="key-wdi-EG.ELC.ACCS.ZS")
     interpolator: str = Field(..., title="Type of imputer to use for interpolation", example="KNNImputer")
@@ -19,6 +19,6 @@ class TrainRequest(BaseModel):
 class ModelResponse(BaseModel):
     rmse_deviation: Optional[float] = Field(..., description="Root-mean-square deviation")
     rmse: Optional[float] = Field(..., description="Root-mean-square deviation")
-    model_feature_importance: Optional[List[int]]
+    model_feature_importance: Optional[List[float]]
     model_feature_names: Optional[List[str]]
     prediction: Optional[dict]
