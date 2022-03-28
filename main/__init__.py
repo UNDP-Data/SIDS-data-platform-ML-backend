@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+
 import logging
 import azure.functions as func
 from api_app import app

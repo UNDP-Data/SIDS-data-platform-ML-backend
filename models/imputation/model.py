@@ -1,4 +1,6 @@
 #Data Manipulation
+import logging
+import os
 
 import numpy as np
 import pandas as pd
@@ -59,11 +61,23 @@ def data_importer(percent=90, model_type="non-series", path="./datasets/"):
     """
     #
 
-    indicatorMeta = pd.read_csv(path + "indicatorMeta.csv")
+    logging.info('loading %s', path + "indicatorMeta.csv")
+
+    try:
+        indicatorMeta = pd.read_csv(path + "indicatorMeta.csv")
+    except Exception as e:
+        logging.exception("Read csv failed")
+
+
+    logging.info('indicatorMeta.csv loaded %s', path + "indicatorMeta.csv")
 
     datasetMeta = pd.read_csv(path + "datasetMeta.csv")
 
+    logging.info('datasetMeta.csv loaded')
+
     indicatorData = pd.read_csv(path + "indicatorData.csv")
+
+    logging.info('indicatorData.csv loaded')
 
     #### Remove rows with missing country or indicator names
     indicatorData["Country/Indicator Code"] = indicatorData["Country Code"] + "-" + indicatorData["Indicator Code"]
@@ -296,7 +310,13 @@ def model_trainer(X_train,X_test,y_train,seed,n_estimators, model,interval):
         params.append(param3)
 
     pipeline = Pipeline([('regressor', model_instances[0])])
-    gs = GridSearchCV(pipeline, params, cv=num_folds, n_jobs=-1, scoring=scoring, refit=True).fit(X_train, y_train)
+
+    n_jobs = 1
+    if os.getenv("SEARCH_JOBS") is not None:
+        n_jobs = int(os.getenv("SEARCH_JOBS"))
+
+    logging.info("Perform grid search using %d jobs", n_jobs)
+    gs = GridSearchCV(pipeline, params, cv=num_folds, n_jobs=n_jobs, scoring=scoring, refit=True).fit(X_train, y_train)
     rmse = np.sqrt(-gs.best_score_)
 
     best_model = gs.best_estimator_["regressor"]
@@ -348,7 +368,6 @@ def model_trainer(X_train,X_test,y_train,seed,n_estimators, model,interval):
     prediction = prediction[prediction.index.isin(SIDS)]
     prediction.index = [pycountry.countries.get(alpha_3=i).name for i in prediction.index]
     prediction = prediction.reset_index().rename(columns={"index":"country"})
-
     #################### Prediction dataframe and best_model instance are the final results of the ML################
 
     return prediction,rmse,gs, best_model
@@ -368,13 +387,17 @@ def query_and_train(manual_predictors, target_year, target,interpolator,scheme,e
     if ind_meta is None:
         ind_meta = indicatorMeta
 
+    logging.info('Data set loaded')
+
     # Train test (for prediction not validation) split
     X_train, X_test, y_train = preprocessing(data=indicatorData, target=target, target_year=target_year,
                                              interpolator=interpolator, SIDS=SIDS, percent=percent)
 
+    logging.info('Data preprocessed')
     # Dimension reduction based on scheme
     X_train, X_test = feature_selection(X_train, X_test, y_train, target, manual_predictors, scheme)
 
+    logging.info('Feature selection completed')
     # training and prediction for X_test
     prediction, rmse, gs, best_model = model_trainer(X_train, X_test, y_train, seed, estimators, model, interval)
 
