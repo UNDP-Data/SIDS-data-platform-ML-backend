@@ -36,10 +36,11 @@ Time consuming request
 }
 ```
 
-### Azure function - Swagger Documentation (consumer plan)
+## Swagger Documentation
+### Azure function - consumer plan
 https://sidsapi-basic.azurewebsites.net/docs#/
 
-### Kubernetes - Swagger Documentation
+### Kubernetes - AKS
 http://20.88.191.216/docs#/
 
 Kubernetes endpoint is faster that consumer plan endpoint
