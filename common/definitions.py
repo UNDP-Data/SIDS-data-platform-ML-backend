@@ -13,7 +13,7 @@ class TrainRequest(BaseModel):
     scheme: str = Field(..., title="Feature selection method selected by user", example="Manual")
     estimators: int = Field(..., title="Number of trees for tree based models", example=10)
     model: str = Field(..., title="Type of model to be trained", example="rfr")
-    interval: str = Field(..., title="Type of prediction interval", example="100")
+    interval: str = Field(..., title="Type of prediction interval", example="quantile")
 
 
 class ModelResponse(BaseModel):

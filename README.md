@@ -17,7 +17,7 @@ Simple faster request
   "scheme": "Manual",
   "estimators": 10,
   "model": "rfr",
-  "interval": "100"
+  "interval": "quantile"
 }
 ```
 
@@ -32,7 +32,7 @@ Time consuming request
   "scheme": "Automatic via feature selection",
   "estimators": 100,
   "model": "rfr",
-  "interval": "100"
+  "interval": "quantile"
 }
 ```
 
