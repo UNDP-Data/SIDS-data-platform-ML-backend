@@ -7,7 +7,7 @@ This is a repository from ML learning backend
 4. View swagger API from http://localhost:7071/docs.
 
 ### Test requests
-####Simple faster request
+Simple faster request
 ```json
 {
   "manual_predictors": ["wdi-AG.LND.AGRI.K2"],
@@ -22,7 +22,7 @@ This is a repository from ML learning backend
 ```
 
 
-####Time consuming request
+Time consuming request
 ```json
 {
   "number_predictor": 10,
