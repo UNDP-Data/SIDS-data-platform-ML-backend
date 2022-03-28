@@ -36,7 +36,7 @@ Time consuming request
 }
 ```
 
-## Swagger Documentation
+## Deployments - Swagger Documentation
 ### Azure function - consumer plan
 https://sidsapi-basic.azurewebsites.net/docs#/
 
