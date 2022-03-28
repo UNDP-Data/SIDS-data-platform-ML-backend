@@ -6,8 +6,9 @@ This is a repository from ML learning backend
 3. Run `func start host`. This will start the azure function locally.
 4. View swagger API from http://localhost:7071/docs.
 
-### Test request
-`
+### Test requests
+####Simple faster request
+```json
 {
   "manual_predictors": ["wdi-AG.LND.AGRI.K2"],
   "target_year": "2001",
@@ -18,15 +19,27 @@ This is a repository from ML learning backend
   "model": "rfr",
   "interval": "100"
 }
-`
+```
 
-### Docker Image Build
-docker build --tag palinda/sidsbackend:v1.0.0 .      
 
-### Docker Image Push
-docker push palinda/sidsbackend:v1.0.0
+####Time consuming request
+```json
+{
+  "number_predictor": 10,
+  "target_year": "2001",
+  "target": "key-wdi-EG.ELC.ACCS.ZS",
+  "interpolator": "KNNImputer",
+  "scheme": "Automatic via feature selection",
+  "estimators": 100,
+  "model": "rfr",
+  "interval": "100"
+}
+```
 
-This will automatically deploy the changes to the Azure function
+### Azure function - Swagger Documentation (consumer plan)
+https://sidsapi-basic.azurewebsites.net/docs#/
 
-### System Swagger Documentation
-https://sidsapi.azurewebsites.net/docs#/
+### Kubernetes - Swagger Documentation
+http://20.88.191.216/docs#/
+
+Kubernetes endpoint is faster that consumer plan endpoint
