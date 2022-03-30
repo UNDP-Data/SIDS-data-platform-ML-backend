@@ -29,7 +29,7 @@ Time consuming request
   "target_year": "2001",
   "target": "key-wdi-EG.ELC.ACCS.ZS",
   "interpolator": "KNNImputer",
-  "scheme": "Automatic via feature selection",
+  "scheme": "AFS",
   "estimators": 100,
   "model": "rfr",
   "interval": "quantile"

@@ -4,6 +4,7 @@ from fastapi import APIRouter
 
 from common.definitions import TrainRequest, ModelResponse
 from common.logger import logger
+from models.imputation.enums import Schema, Model, Interval, Interpolator
 from models.imputation.model import query_and_train
 
 router = APIRouter(
@@ -11,6 +12,16 @@ router = APIRouter(
     tags=["Imputation"],
     responses={404: {"description": "Not found"}},
 )
+
+
+@router.get('/params')
+async def get_params():
+    return {
+        "Schema": Schema.__members__.items(),
+        "Model": Model.__members__.items(),
+        "Interpolator": Interpolator.__members__.items(),
+        "Interval": Interval.__members__.items(),
+    }
 
 
 @router.post('/predict', response_model=ModelResponse)

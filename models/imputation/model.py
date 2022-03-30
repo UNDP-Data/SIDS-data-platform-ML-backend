@@ -19,6 +19,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 from common.constants import SIDS
 from common.logger import logger
+from models.imputation import Schema, Interpolator, Interval, Model
 
 seed = 7
 
@@ -154,7 +155,7 @@ def preprocessing(data, target, target_year, interpolator, SIDS, percent=30):
     X_test = X_test[most_complete]
 
     # How muc does fiting only on X_train affect fits (perhaps another layer of performance via CV)
-    if interpolator == 'KNNImputer':
+    if interpolator == Interpolator.KNNImputer.name:
         scaler = MinMaxScaler()
         imputer = KNNImputer(n_neighbors=5)  # Hard Coded
         scaler.fit(X_train)
@@ -169,7 +170,7 @@ def preprocessing(data, target, target_year, interpolator, SIDS, percent=30):
                               index=X_test.index)
 
 
-    elif interpolator == 'SimpleImputer':
+    elif interpolator == Interpolator.SimpleImputer.name:
         imp_mean = SimpleImputer(missing_values=np.nan, strategy='mean')  # Hard coded
         imp_mean.fit(X_train)
         X_train = pd.DataFrame(data=imp_mean.transform(X_train)
@@ -226,8 +227,7 @@ def feature_selection(X_train, X_test, y_train, target, manual_predictors, schem
         query_card: correlation plot of X_train (ignore for now)
     """
 
-    if scheme == "Automatic via feature selection":
-
+    if scheme == Schema.AFS.name:
         # Take the most import predictor_number number of independent variables (via RFE) and plot correlation
         importance_boolean = feature_selector(X_train=X_train, y_train=y_train, manual_predictors=manual_predictors)
         prediction_features = (X_train.columns[importance_boolean].tolist())
@@ -235,7 +235,7 @@ def feature_selection(X_train, X_test, y_train, target, manual_predictors, schem
         X_train = X_train[prediction_features]
         X_test = X_test[prediction_features]
 
-    elif scheme == "Automatic via PCA":
+    elif scheme == Schema.PCA.name:
         pca = PCA(n_components=manual_predictors)
         pca.fit(X_train)
         columns = ["pca " + str(i) for i in list(range(manual_predictors))]
@@ -274,13 +274,13 @@ def model_trainer(X_train,X_test,y_train,seed,n_estimators, model,interval):
     """
 
     if model == "all":
-        model = ["rfr","etr","gbr","svr"]
+        model = Model.__members__.keys()
     model_instances=[]
     params= []
 
     num_folds = 5 # Hard coded
     scoring = 'neg_mean_squared_error'
-    if "rfr" in  model:
+    if Model.rfr.name in  model:
         clf1 = RandomForestRegressor(random_state = seed)
         param1 = {}
         param1['regressor__n_estimators'] = [n_estimators]
@@ -288,7 +288,7 @@ def model_trainer(X_train,X_test,y_train,seed,n_estimators, model,interval):
         param1['regressor'] = [clf1]
         model_instances.append(clf1)
         params.append(param1)
-    if "etr" in model:
+    if Model.etr.name in model:
         clf2 = ExtraTreesRegressor(random_state = seed)
         param2 = {}
         param2['regressor__n_estimators'] = [n_estimators]
@@ -297,10 +297,10 @@ def model_trainer(X_train,X_test,y_train,seed,n_estimators, model,interval):
         model_instances.append(clf2)
         params.append(param2)
 
-    if "gbr" in model:
+    if Model.gbr.name in model:
         clf3 = GradientBoostingRegressor(random_state = seed)
         param3 = {}
-        if interval == "quantile":
+        if interval == Interval.quantile.name:
             param3['regressor__loss'] = ['quantile']
             param3['regressor__alpha'] = [0.5] # hard coded
         param3['regressor__n_estimators'] = [n_estimators]
@@ -324,7 +324,7 @@ def model_trainer(X_train,X_test,y_train,seed,n_estimators, model,interval):
     prediction = pd.DataFrame(gs.predict(X_test), columns=["prediction"], index=X_test.index)
 
 
-    if interval == "bootstrap":
+    if interval == Interval.bootstrap.name:
 
         #Residual Bootsrapping  on validation data
         pred_train = cross_val_predict(best_model,X_train, y_train, cv=3)
