@@ -27,18 +27,6 @@ jobs:
         login-server: ${{ env.REGISTRY_NAME }}.azurecr.io
         username: ${{ secrets.AZURE_CLIENT_ID }} 
         password: ${{ secrets.REGISTRY_PASSWORD }}
-    
-    - name: Azure Blob Storage - Download Blob
-      uses: armanrahman22/azblob-download-action@v0.0.4
-      with:
-        storage-account-name: ${{ env.STROAGE_ACCOUNT }}
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-        container-name: ${{ env.STORAGE_CONTAINER }}
-        blob-name: "datasetMeta.csv"
-        download-path: "./datasets/"
-    - name: View Output
-      run: |
-        ls ./datasets/
 
     # Container build and push to a Azure Container Registry (ACR)
     - name: 'Compose Docker Image'
