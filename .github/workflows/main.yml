@@ -19,6 +19,45 @@ jobs:
     steps:
     - name: 'Checkout GitHub Action'
       uses: actions/checkout@main
+
+    - name: Download Blob - datasetMeta.csv
+      uses: armanrahman22/azblob-download-action@v0.0.4
+      with:
+        storage-account-name: ${{ env.STROAGE_ACCOUNT }}
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        container-name: ${{ env.STORAGE_CONTAINER }}
+        blob-name: "datasetMeta.csv"
+        download-path: "./datasets/"
+    - name: Download Blob indicatorCategories.json
+      uses: armanrahman22/azblob-download-action@v0.0.4
+      with:
+        storage-account-name: ${{ env.STROAGE_ACCOUNT }}
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        container-name: ${{ env.STORAGE_CONTAINER }}
+        blob-name: "indicatorCategories.json"
+        download-path: "./datasets/"
+
+    - name: Download Blob - indicatorData.csv
+      uses: armanrahman22/azblob-download-action@v0.0.4
+      with:
+        storage-account-name: ${{ env.STROAGE_ACCOUNT }}
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        container-name: ${{ env.STORAGE_CONTAINER }}
+        blob-name: "indicatorData.csv"
+        download-path: "./datasets/"
+
+    - name: Download Blob - indicatorMeta.csv
+      uses: armanrahman22/azblob-download-action@v0.0.4
+      with:
+        storage-account-name: ${{ env.STROAGE_ACCOUNT }}
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        container-name: ${{ env.STORAGE_CONTAINER }}
+        blob-name: "indicatorMeta.csv"
+        download-path: "./datasets/"
+
+    - name: View Output
+      run: |
+        ls ./datasets/
     
     # Connect to Azure Container Registry (ACR)
     - name: 'Docker Login'
