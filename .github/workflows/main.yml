@@ -1,0 +1,71 @@
+env:
+  REGISTRY_NAME: sidsakstest
+  CLUSTER_NAME: exampleaks01
+  CLUSTER_RESOURCE_GROUP: k8s-example-rg
+  NAMESPACE: default
+  APP_NAME: example01
+  SECRET: exampleactions
+  
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: 'Checkout GitHub Action'
+      uses: actions/checkout@main
+    
+    # Connect to Azure Container Registry (ACR)
+    - name: 'Docker Login'
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ env.REGISTRY_NAME }}.azurecr.io
+        username: ${{ secrets.AZURE_CLIENT_ID }} 
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+    
+    # Container build and push to a Azure Container Registry (ACR)
+    - name: 'Compose Docker Image'
+      shell: bash
+      run: |
+        docker build -t ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.APP_NAME }}:latest .
+        docker push ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.APP_NAME }}:latest
+
+    # Set the target Azure Kubernetes Service (AKS) cluster. 
+    
+    - uses: azure/aks-set-context@v1
+      with:
+        creds: '${{ secrets.AZURE_CREDENTIALS }}'
+        cluster-name: ${{ env.CLUSTER_NAME }}
+        resource-group: ${{ env.CLUSTER_RESOURCE_GROUP }}
+    
+    # # Create namespace if doesn't exist
+    # - run: |
+    #     kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o json | kubectl apply -f -
+    
+    # # Create image pull secret for ACR
+    # - uses: azure/k8s-create-secret@v1
+    #   with:
+    #     container-registry-url: ${{ env.REGISTRY_NAME }}.azurecr.io
+    #     container-registry-username: ${{ secrets.REGISTRY_USERNAME }}
+    #     container-registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+    #     secret-name: ${{ env.SECRET }}
+    #     namespace: ${{ env.NAMESPACE }}
+    #     arguments: --force true
+
+    - name: Deploy
+      run: kubectl rollout restart deployment ${{ env.APP_NAME }}-http --namespace=${{ env.NAMESPACE }}
+    
+    # # Deploy app to AKS
+    # - uses: azure/k8s-deploy@v1
+    #   with:
+    #     manifests: |
+    #       ${{ github.workspace }}/manifests/deployment.yaml
+    #       ${{ github.workspace }}/manifests/service.yaml
+    #     images: |
+    #       ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.APP_NAME }}:${{ github.sha }}
+    #     imagepullsecrets: |
+    #       ${{ env.SECRET }}
+    #     namespace: ${{ env.NAMESPACE }}

@@ -17,7 +17,7 @@ app.include_router(imputation.router)
 
 @app.get("/")
 async def root():
-    return {"message": "Hello SIDS ML Backend V2!"}
+    return {"message": "Hello SIDS ML Backend V6!"}
 
 
 def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
