@@ -62,23 +62,23 @@ def data_importer(percent=90, model_type="non-series", path="./datasets/"):
     """
     #
 
+    import os
+    cwd = os.getcwd()
     logging.info('loading %s', path + "indicatorMeta.csv")
-
+    logging.info("Current directory [%s]", cwd)
     try:
         indicatorMeta = pd.read_csv(path + "indicatorMeta.csv")
+        logging.info('indicatorMeta.csv loaded %s', path + "indicatorMeta.csv")
+
+        datasetMeta = pd.read_csv(path + "datasetMeta.csv")
+
+        logging.info('datasetMeta.csv loaded')
+
+        indicatorData = pd.read_csv(path + "indicatorData.csv")
+
+        logging.info('indicatorData.csv loaded')
     except Exception as e:
-        logging.exception("Read csv failed")
-
-
-    logging.info('indicatorMeta.csv loaded %s', path + "indicatorMeta.csv")
-
-    datasetMeta = pd.read_csv(path + "datasetMeta.csv")
-
-    logging.info('datasetMeta.csv loaded')
-
-    indicatorData = pd.read_csv(path + "indicatorData.csv")
-
-    logging.info('indicatorData.csv loaded')
+        logging.exception("Read csv failed: " + str(e))
 
     #### Remove rows with missing country or indicator names
     indicatorData["Country/Indicator Code"] = indicatorData["Country Code"] + "-" + indicatorData["Indicator Code"]
