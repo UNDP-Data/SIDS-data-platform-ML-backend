@@ -5,6 +5,8 @@ env:
   NAMESPACE: default
   APP_NAME: example01
   SECRET: exampleactions
+  STROAGE_ACCOUNT: sidsakstest
+  STORAGE_CONTAINER: datasets
   
 on:
   push:
@@ -26,11 +28,18 @@ jobs:
         username: ${{ secrets.AZURE_CLIENT_ID }} 
         password: ${{ secrets.REGISTRY_PASSWORD }}
     
-    - name: 'Download dataset'
-      shell: bash
+    - name: Azure Blob Storage - Download Blob
+      uses: armanrahman22/azblob-download-action
+      with:
+        storage-account-name: ${{ env.STROAGE_ACCOUNT }}
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        container-name: ${{ env.STORAGE_CONTAINER }}
+        blob-name: "datasetMeta.csv"
+        download-path: "./datasets/"
+    - name: View Output
       run: |
-        az storage container list 
-        
+        ls ./datasets/
+
     # Container build and push to a Azure Container Registry (ACR)
     - name: 'Compose Docker Image'
       shell: bash
