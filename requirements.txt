@@ -7,3 +7,4 @@ scikit-learn==1.0.2
 numpy
 pandas
 pycountry
+fastapi_utils

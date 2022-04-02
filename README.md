@@ -1,4 +1,14 @@
-This is a repository from ML learning backend
+#SID ML Backend
+
+##Introduction
+
+##Folder Structure
+
+##How to Add New Model
+
+
+##Deployment
+
 
 ### Run Locally
 1. Install Azure core tools - https://github.com/Azure/azure-functions-core-tools.
@@ -14,7 +24,7 @@ Simple faster request
   "target_year": "2001",
   "target": "key-wdi-EG.ELC.ACCS.ZS",
   "interpolator": "KNNImputer",
-  "scheme": "Manual",
+  "scheme": "MANUAL",
   "estimators": 10,
   "model": "rfr",
   "interval": "quantile"

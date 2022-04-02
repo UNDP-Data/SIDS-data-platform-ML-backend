@@ -1,4 +1,4 @@
-#Data Manipulation
+# Data Manipulation
 import logging
 import os
 
@@ -7,6 +7,7 @@ import pandas as pd
 # Country name format
 import pycountry
 # Propcessing and training
+from fastapi import HTTPException
 from sklearn.decomposition import PCA
 from sklearn.ensemble import ExtraTreesRegressor, RandomForestRegressor, GradientBoostingRegressor
 from sklearn.experimental import enable_iterative_imputer  # noqa
@@ -29,20 +30,21 @@ measure = 90
 # Interpolation for indcators missing less than 30% using KNN imputer
 percent = 30
 
+
 def cou_ind_miss(Data):
     """
         Returns the amount of missingness across the years in each indicator-country pair
     """
-    absolute_missing = Data.drop(columns=["Country Code","Indicator Code"]).isnull().sum(axis=1)
-    total = Data.drop(columns=["Country Code","Indicator Code"]).count(axis=1)
+    absolute_missing = Data.drop(columns=["Country Code", "Indicator Code"]).isnull().sum(axis=1)
+    total = Data.drop(columns=["Country Code", "Indicator Code"]).count(axis=1)
 
-    percent_missing = absolute_missing * 100 / Data.drop(columns=["Country Code","Indicator Code"]).shape[1]
-    missing_value_df = pd.DataFrame({'row_name': Data["Country Code"]+"-"+Data["Indicator Code"],
-                                 'Indicator Code':Data["Indicator Code"],
-                                 'absolute_missing':absolute_missing,
-                                 'total':total,
-                                 'percent_missing': percent_missing})
-    countyIndicator_missingness = missing_value_df.sort_values(["percent_missing","row_name"])
+    percent_missing = absolute_missing * 100 / Data.drop(columns=["Country Code", "Indicator Code"]).shape[1]
+    missing_value_df = pd.DataFrame({'row_name': Data["Country Code"] + "-" + Data["Indicator Code"],
+                                     'Indicator Code': Data["Indicator Code"],
+                                     'absolute_missing': absolute_missing,
+                                     'total': total,
+                                     'percent_missing': percent_missing})
+    countyIndicator_missingness = missing_value_df.sort_values(["percent_missing", "row_name"])
 
     return countyIndicator_missingness
 
@@ -116,7 +118,7 @@ def missingness(df):
     missing_value_df = pd.DataFrame({'column_name': df.columns,
                                      'absolute_missing': absolute_missing,
                                      'percent_missing': percent_missing})
-    return missing_value_df.sort_values(["percent_missing","column_name"])
+    return missing_value_df.sort_values(["percent_missing", "column_name"])
 
 
 def preprocessing(data, target, target_year, interpolator, SIDS, percent=30):
@@ -136,6 +138,8 @@ def preprocessing(data, target, target_year, interpolator, SIDS, percent=30):
     """
 
     # Subset data for target and target_year
+    # if str(target_year) not in data.index:
+    #     raise HTTPException(status_code=404, detail={"msg": "Given rget year not in the dataset"})
     data_sub = data[["Country Code", "Indicator Code", str(target_year)]]
     data_sub = data_sub.set_index(["Country Code", "Indicator Code"])[str(target_year)].unstack(level=1)
 
@@ -155,7 +159,7 @@ def preprocessing(data, target, target_year, interpolator, SIDS, percent=30):
     X_test = X_test[most_complete]
 
     # How muc does fiting only on X_train affect fits (perhaps another layer of performance via CV)
-    if interpolator == Interpolator.KNNImputer.name:
+    if interpolator == Interpolator.KNNImputer:
         scaler = MinMaxScaler()
         imputer = KNNImputer(n_neighbors=5)  # Hard Coded
         scaler.fit(X_train)
@@ -170,7 +174,7 @@ def preprocessing(data, target, target_year, interpolator, SIDS, percent=30):
                               index=X_test.index)
 
 
-    elif interpolator == Interpolator.SimpleImputer.name:
+    elif interpolator == Interpolator.SimpleImputer:
         imp_mean = SimpleImputer(missing_values=np.nan, strategy='mean')  # Hard coded
         imp_mean.fit(X_train)
         X_train = pd.DataFrame(data=imp_mean.transform(X_train)
@@ -196,18 +200,18 @@ def preprocessing(data, target, target_year, interpolator, SIDS, percent=30):
 
 
 # Select features/ reduce dimensionality
-def feature_selector(X_train,y_train,manual_predictors):
+def feature_selector(X_train, y_train, manual_predictors):
     """
         Implement the Recursive feature selection for automatic selection of predictors for model
 
         returns: A boolean list of which features should be considered for prediction
     """
     # ESTIMATOR STILL UNDER INVESTIGATION: FOR NOW TAKE ON WITH HIGH DIMENSIONALITY TOLERANCE
-    estimator= RandomForestRegressor()
+    estimator = RandomForestRegressor()
 
     # STEP SIZE UNDER INVESTIGATION: FOR NOW TAKE ONE THAT REDUCES COMPUTATION TIME WITHOUT JUMPING
-    selector = RFE(estimator,n_features_to_select=manual_predictors,step= manual_predictors)
-    selector.fit(X_train,y_train)
+    selector = RFE(estimator, n_features_to_select=manual_predictors, step=manual_predictors)
+    selector.fit(X_train, y_train)
     return selector.support_
 
 
@@ -227,7 +231,7 @@ def feature_selection(X_train, X_test, y_train, target, manual_predictors, schem
         query_card: correlation plot of X_train (ignore for now)
     """
 
-    if scheme == Schema.AFS.name:
+    if scheme == Schema.AFS:
         # Take the most import predictor_number number of independent variables (via RFE) and plot correlation
         importance_boolean = feature_selector(X_train=X_train, y_train=y_train, manual_predictors=manual_predictors)
         prediction_features = (X_train.columns[importance_boolean].tolist())
@@ -235,7 +239,7 @@ def feature_selection(X_train, X_test, y_train, target, manual_predictors, schem
         X_train = X_train[prediction_features]
         X_test = X_test[prediction_features]
 
-    elif scheme == Schema.PCA.name:
+    elif scheme == Schema.PCA:
         pca = PCA(n_components=manual_predictors)
         pca.fit(X_train)
         columns = ["pca " + str(i) for i in list(range(manual_predictors))]
@@ -247,6 +251,7 @@ def feature_selection(X_train, X_test, y_train, target, manual_predictors, schem
         # query_card = px.imshow(correlation.corr(),x=correlation.columns,y=correlation.columns, color_continuous_scale=px.colors.sequential.Blues, title= 'Correlation plot')
 
 
+
     else:
         prediction_features = manual_predictors
         # query_card = correlation_plotter(target,prediction_features, training_data, ind_meta)
@@ -255,8 +260,9 @@ def feature_selection(X_train, X_test, y_train, target, manual_predictors, schem
 
     return X_train, X_test  # ,query_card
 
+
 # Train model and predict
-def model_trainer(X_train,X_test,y_train,seed,n_estimators, model,interval):
+def model_trainer(X_train, X_test, y_train, seed, n_estimators, model_type, interval):
     """
     Train the selected model, cross validate, score and generate a 90% prediction interval based on bootstrapped residuals.
     Args:
@@ -273,38 +279,43 @@ def model_trainer(X_train,X_test,y_train,seed,n_estimators, model,interval):
         best_model: the best model
     """
 
-    if model == "all":
-        model = Model.__members__.keys()
-    model_instances=[]
-    params= []
+    model_list = None
+    if model_type == Model.all:
+        model_list = list(Model.__members__.items())
+        model_list.remove(Model.all)
+    else:
+        model_list = [model_type]
 
-    num_folds = 5 # Hard coded
+    model_instances = []
+    params = []
+
+    num_folds = 5  # Hard coded
     scoring = 'neg_mean_squared_error'
-    if Model.rfr.name in  model:
-        clf1 = RandomForestRegressor(random_state = seed)
+    if Model.rfr in model_list:
+        clf1 = RandomForestRegressor(random_state=seed)
         param1 = {}
         param1['regressor__n_estimators'] = [n_estimators]
-        param1['regressor__max_depth'] = [5, 10, 20,100, None] # Hard coded
+        param1['regressor__max_depth'] = [5, 10, 20, 100, None]  # Hard coded
         param1['regressor'] = [clf1]
         model_instances.append(clf1)
         params.append(param1)
-    if Model.etr.name in model:
-        clf2 = ExtraTreesRegressor(random_state = seed)
+    if Model.etr in model_list:
+        clf2 = ExtraTreesRegressor(random_state=seed)
         param2 = {}
         param2['regressor__n_estimators'] = [n_estimators]
-        param2['regressor__max_depth'] = [5, 10, 20,100, None]# Hard coded
+        param2['regressor__max_depth'] = [5, 10, 20, 100, None]  # Hard coded
         param2['regressor'] = [clf2]
         model_instances.append(clf2)
         params.append(param2)
 
-    if Model.gbr.name in model:
-        clf3 = GradientBoostingRegressor(random_state = seed)
+    if Model.gbr in model_list:
+        clf3 = GradientBoostingRegressor(random_state=seed)
         param3 = {}
-        if interval == Interval.quantile.name:
+        if interval == Interval.quantile:
             param3['regressor__loss'] = ['quantile']
-            param3['regressor__alpha'] = [0.5] # hard coded
+            param3['regressor__alpha'] = [0.5]  # hard coded
         param3['regressor__n_estimators'] = [n_estimators]
-        param3['regressor__max_depth'] = [3,5, 10, 20, None]# Hard coded
+        param3['regressor__max_depth'] = [3, 5, 10, 20, None]  # Hard coded
         param3['regressor'] = [clf3]
         model_instances.append(clf3)
         params.append(param3)
@@ -323,54 +334,56 @@ def model_trainer(X_train,X_test,y_train,seed,n_estimators, model,interval):
 
     prediction = pd.DataFrame(gs.predict(X_test), columns=["prediction"], index=X_test.index)
 
-
     if interval == Interval.bootstrap.name:
 
-        #Residual Bootsrapping  on validation data
-        pred_train = cross_val_predict(best_model,X_train, y_train, cv=3)
+        # Residual Bootsrapping  on validation data
+        pred_train = cross_val_predict(best_model, X_train, y_train, cv=3)
 
         res = y_train - pred_train
 
         ### BOOTSTRAPPED INTERVALS ###
 
-        alpha = 0.1 #(90% prediction interval) #Hard Coded
+        alpha = 0.1  # (90% prediction interval) #Hard Coded
 
         bootstrap = np.asarray([np.random.choice(res, size=res.shape) for _ in range(100)])
-        q_bootstrap = np.quantile(bootstrap, q=[alpha/2, 1-alpha/2], axis=0)
+        q_bootstrap = np.quantile(bootstrap, q=[alpha / 2, 1 - alpha / 2], axis=0)
 
-        #prediction = pd.DataFrame(gs.predict(X_test), columns=["prediction"], index=X_test.index)
-        prediction["upper"]= prediction["prediction"] + q_bootstrap[1].mean()
-        prediction["lower"]= prediction["prediction"] + q_bootstrap[0].mean()
+        # prediction = pd.DataFrame(gs.predict(X_test), columns=["prediction"], index=X_test.index)
+        prediction["upper"] = prediction["prediction"] + q_bootstrap[1].mean()
+        prediction["lower"] = prediction["prediction"] + q_bootstrap[0].mean()
 
     else:
-        if str(type(best_model))== "<class 'sklearn.ensemble._gb.GradientBoostingRegressor'>":
+        if str(type(best_model)) == "<class 'sklearn.ensemble._gb.GradientBoostingRegressor'>":
             all_models = {}
-            for alpha in [0.05, 0.95]: # Hard Coded
-                gbr = GradientBoostingRegressor(loss="quantile", alpha=alpha,max_depth=gs.best_params_['regressor__max_depth'],n_estimators=gs.best_params_['regressor__n_estimators'])
+            for alpha in [0.05, 0.95]:  # Hard Coded
+                gbr = GradientBoostingRegressor(loss="quantile", alpha=alpha,
+                                                max_depth=gs.best_params_['regressor__max_depth'],
+                                                n_estimators=gs.best_params_['regressor__n_estimators'])
                 all_models["q %1.2f" % alpha] = gbr.fit(X_train, y_train)
-                #For prediction
+                # For prediction
 
-            prediction["lower"]= all_models["q 0.05"].predict(X_test)
-            prediction["upper"]= all_models["q 0.95"].predict(X_test)
+            prediction["lower"] = all_models["q 0.05"].predict(X_test)
+            prediction["upper"] = all_models["q 0.95"].predict(X_test)
         else:
             pred_Q = pd.DataFrame()
             for pred in best_model.estimators_:
                 temp = pd.Series(pred.predict(X_test))
-                pred_Q = pd.concat([pred_Q,temp],axis=1)
-            quantiles = [0.05, 0.95] # Hard Coded
+                pred_Q = pd.concat([pred_Q, temp], axis=1)
+            quantiles = [0.05, 0.95]  # Hard Coded
 
             for q in quantiles:
                 s = pred_Q.quantile(q=q, axis=1)
                 prediction[str(q)] = s.values
-            prediction.rename(columns={"0.05":"lower","0.95":"upper"}, inplace=True) # Column names are hard coded
+            prediction.rename(columns={"0.05": "lower", "0.95": "upper"}, inplace=True)  # Column names are hard coded
 
     # Predict for SIDS countries with missing values
     prediction = prediction[prediction.index.isin(SIDS)]
     prediction.index = [pycountry.countries.get(alpha_3=i).name for i in prediction.index]
-    prediction = prediction.reset_index().rename(columns={"index":"country"})
+    prediction = prediction.reset_index().rename(columns={"index": "country"})
     #################### Prediction dataframe and best_model instance are the final results of the ML################
 
-    return prediction,rmse,gs, best_model
+    return prediction, rmse, gs, best_model
+
 
 # Import data
 wb_data = None
@@ -379,14 +392,91 @@ datasetMeta = None
 indicatorData = None
 
 
-def query_and_train(manual_predictors, target_year, target,interpolator,scheme,estimators,model,interval, ind_meta):
+def load_dataset():
     global wb_data, indicatorMeta, datasetMeta, indicatorData
     if wb_data is None:
         wb_data, indicatorMeta, datasetMeta, indicatorData = data_importer(model_type="knn")
 
-    if ind_meta is None:
-        ind_meta = indicatorMeta
 
+load_dataset()
+
+
+def dimension_options(target, target_year):
+    wdi_indicatorData_2010 = indicatorData[["Country Code", "Indicator Code", str(target_year)]]
+    wdi_indicatorData_2010 = wdi_indicatorData_2010.set_index(["Country Code", "Indicator Code"])[
+        str(target_year)].unstack(level=1)
+    rank = missingness(wdi_indicatorData_2010)
+    top_ranked = rank[(rank.percent_missing < 80) & (rank.percent_missing > 0)]["column_name"].values
+
+    codes = indicatorMeta[indicatorMeta["Indicator"] == target][["Indicator Code", "Dimension"]]
+    codes = codes[codes["Indicator Code"].isin(top_ranked)]
+    return [{'label': codes.loc[i, "Dimension"], 'value': codes.loc[i, "Indicator Code"]} for i in codes.index]
+
+
+def dataset_options(target_year):
+    logging.info("Dataset options:")
+    data = indicatorData
+    ind_meta = indicatorMeta
+    data_meta = datasetMeta
+    wdi_indicatorData_2010 = data[["Country Code", "Indicator Code", str(target_year)]]
+    # wdi_indicatorData_2010 = wdi_indicatorData_2010[wdi_indicatorData_2010["Country Code"].isin(SIDS)]
+    wdi_indicatorData_2010 = wdi_indicatorData_2010.set_index(["Country Code", "Indicator Code"])[
+        str(target_year)].unstack(level=1)
+    rank = missingness(wdi_indicatorData_2010)
+    top_ranked = rank[(rank.percent_missing < 80) & (rank.percent_missing > 0)]["column_name"].values
+
+    # top_ranked = indicator_list(target_year,data,SIDS, percent=percent)
+    Datasets = np.unique(ind_meta[ind_meta["Indicator Code"].isin(top_ranked)].Dataset.values)
+    data_list = {}
+    for i in Datasets:
+        names = data_meta[data_meta["Dataset Code"] == i]["Dataset Name"]
+        if len(names.values) > 0:
+            data_list[i] = names.values[0]
+    return data_list
+
+
+def get_target_years():
+    return list(range(2000, 2020))
+
+
+def get_predictor_list(target, target_year, scheme):
+    if scheme == Schema.MANUAL:
+        # Subset data for target and target_year
+        wdi_indicatorData_2010 = indicatorData[["Country Code", "Indicator Code", str(target_year)]]
+        wdi_indicatorData_2010 = wdi_indicatorData_2010.set_index(["Country Code", "Indicator Code"])[
+            str(target_year)].unstack(level=1)
+
+        # Find how much missing values are there for each indicator
+        rank = missingness(wdi_indicatorData_2010)
+
+        # Only consider indcators with less than 80% missing values
+        top_ranked = rank[rank.percent_missing < 30]["column_name"].values
+
+        # top_ranked = indicator_list(target_year,data,SIDS, percent=percent)
+        if target in top_ranked:
+            top_ranked = np.delete(top_ranked, np.where(top_ranked == target))
+        names = indicatorMeta[indicatorMeta["Indicator Code"].isin(top_ranked)][
+            ["Indicator", "Dimension", "Indicator Code"]].set_index("Indicator Code")
+        return {i: (str(names.loc[i, "Indicator"]) + "-" + str(names.loc[i, "Dimension"])) for i in names.index}
+    else:
+        return {i: i for i in list(range(10, 51))}
+
+
+def get_indicator_list(target_year: str, dataset: str):
+    ind_list = indicatorMeta[indicatorMeta.Dataset == dataset]["Indicator Code"].values
+    wdi_indicatorData_2010 = indicatorData[["Country Code", "Indicator Code", str(target_year)]]
+    # wdi_indicatorData_2010 = wdi_indicatorData_2010[wdi_indicatorData_2010["Country Code"].isin(SIDS)]
+    wdi_indicatorData_2010 = wdi_indicatorData_2010[wdi_indicatorData_2010["Indicator Code"].isin(ind_list)]
+    wdi_indicatorData_2010 = wdi_indicatorData_2010.set_index(["Country Code", "Indicator Code"])[
+        str(target_year)].unstack(level=1)
+    rank = missingness(wdi_indicatorData_2010)
+    top_ranked = rank[(rank.percent_missing < 80) & (rank.percent_missing > 0)]["column_name"].values
+
+    return (indicatorMeta[indicatorMeta["Indicator Code"].isin(top_ranked)].groupby("Indicator Code").nth(0))["Indicator"].to_dict()
+
+
+def query_and_train(manual_predictors, target_year, target, interpolator, scheme, estimators, model, interval,
+                    ind_meta):
     logging.info('Data set loaded')
 
     # Train test (for prediction not validation) split
@@ -401,4 +491,5 @@ def query_and_train(manual_predictors, target_year, target,interpolator,scheme,e
     # training and prediction for X_test
     prediction, rmse, gs, best_model = model_trainer(X_train, X_test, y_train, seed, estimators, model, interval)
 
-    return (rmse/y_train.mean()).item(), rmse.item(), best_model.feature_importances_.tolist(), best_model.feature_names_in_.tolist(), prediction
+    return (
+                   rmse / y_train.mean()).item(), rmse.item(), best_model.feature_importances_.tolist(), best_model.feature_names_in_.tolist(), prediction
