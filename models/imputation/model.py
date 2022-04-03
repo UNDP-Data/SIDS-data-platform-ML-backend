@@ -19,6 +19,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler
 
 from common.constants import SIDS
+from common.errors import Error
 from common.logger import logger
 from models.imputation import Schema, Interpolator, Interval, Model
 
@@ -30,6 +31,10 @@ measure = 90
 # Interpolation for indcators missing less than 30% using KNN imputer
 percent = 30
 
+supported_years = [str(x) for x in list(range(2000, 2020))]
+Datasets = {}
+Targets_top_ranked = {}
+Predictor_list = {}
 
 def cou_ind_miss(Data):
     """
@@ -413,22 +418,30 @@ def dimension_options(target, target_year):
     return [{'label': codes.loc[i, "Dimension"], 'value': codes.loc[i, "Indicator Code"]} for i in codes.index]
 
 
+def check_dataset_validity(target_year, dataset):
+    options = dataset_options(target_year)
+    if options.get(dataset) is None:
+        raise HTTPException(status_code=400, detail=Error.INVALID_DATASET.format(list(options.keys())).value)
+
+
 def dataset_options(target_year):
     logging.info("Dataset options:")
     data = indicatorData
     ind_meta = indicatorMeta
     data_meta = datasetMeta
-    wdi_indicatorData_2010 = data[["Country Code", "Indicator Code", str(target_year)]]
-    # wdi_indicatorData_2010 = wdi_indicatorData_2010[wdi_indicatorData_2010["Country Code"].isin(SIDS)]
-    wdi_indicatorData_2010 = wdi_indicatorData_2010.set_index(["Country Code", "Indicator Code"])[
-        str(target_year)].unstack(level=1)
-    rank = missingness(wdi_indicatorData_2010)
-    top_ranked = rank[(rank.percent_missing < 80) & (rank.percent_missing > 0)]["column_name"].values
-
     # top_ranked = indicator_list(target_year,data,SIDS, percent=percent)
-    Datasets = np.unique(ind_meta[ind_meta["Indicator Code"].isin(top_ranked)].Dataset.values)
+    global Datasets
+    if target_year not in Datasets:
+        logging.info("Dataset does not found in the cache for year %s", target_year)
+        wdi_indicatorData_2010 = data[["Country Code", "Indicator Code", str(target_year)]]
+        # wdi_indicatorData_2010 = wdi_indicatorData_2010[wdi_indicatorData_2010["Country Code"].isin(SIDS)]
+        wdi_indicatorData_2010 = wdi_indicatorData_2010.set_index(["Country Code", "Indicator Code"])[
+            str(target_year)].unstack(level=1)
+        rank = missingness(wdi_indicatorData_2010)
+        top_ranked = rank[(rank.percent_missing < 80) & (rank.percent_missing > 0)]["column_name"].values
+        Datasets[target_year] = np.unique(ind_meta[ind_meta["Indicator Code"].isin(top_ranked)].Dataset.values)
     data_list = {}
-    for i in Datasets:
+    for i in Datasets[target_year]:
         names = data_meta[data_meta["Dataset Code"] == i]["Dataset Name"]
         if len(names.values) > 0:
             data_list[i] = names.values[0]
@@ -436,11 +449,17 @@ def dataset_options(target_year):
 
 
 def get_target_years():
-    return list(range(2000, 2020))
+    return supported_years
 
 
-def get_predictor_list(target, target_year, scheme):
-    if scheme == Schema.MANUAL:
+def check_year_validity(year):
+    if year not in supported_years:
+        raise HTTPException(status_code=400, detail=Error.INVALID_TARGET_YEAR.format(supported_years[0], supported_years[-1]).value)
+
+
+def load_predictos(target_year: str):
+    global Predictor_list
+    if target_year not in Predictor_list:
         # Subset data for target and target_year
         wdi_indicatorData_2010 = indicatorData[["Country Code", "Indicator Code", str(target_year)]]
         wdi_indicatorData_2010 = wdi_indicatorData_2010.set_index(["Country Code", "Indicator Code"])[
@@ -451,9 +470,33 @@ def get_predictor_list(target, target_year, scheme):
 
         # Only consider indcators with less than 80% missing values
         top_ranked = rank[rank.percent_missing < 30]["column_name"].values
+        Predictor_list[target_year] = top_ranked
+
+
+def check_predictors_validity(target_year, predictors):
+    global Predictor_list
+    load_predictos(target_year)
+    invalid_predictors = []
+
+    for p in predictors:
+        res = np.where(Predictor_list[target_year] == p)
+        if res[0].size <= 0:
+            invalid_predictors.append(p)
+
+    logging.info(invalid_predictors)
+    if len(invalid_predictors) > 0:
+        raise HTTPException(status_code=400, detail=Error.INVALID_PREDICTOR.format(invalid_predictors).value)
+
+
+def get_predictor_list(target, target_year, scheme):
+    if scheme == Schema.MANUAL:
+
+        global Predictor_list
+        load_predictos(target_year)
 
         # top_ranked = indicator_list(target_year,data,SIDS, percent=percent)
-        if target in top_ranked:
+        top_ranked = Predictor_list[target_year]
+        if target in target_year:
             top_ranked = np.delete(top_ranked, np.where(top_ranked == target))
         names = indicatorMeta[indicatorMeta["Indicator Code"].isin(top_ranked)][
             ["Indicator", "Dimension", "Indicator Code"]].set_index("Indicator Code")
@@ -462,17 +505,35 @@ def get_predictor_list(target, target_year, scheme):
         return {i: i for i in list(range(10, 51))}
 
 
-def get_indicator_list(target_year: str, dataset: str):
-    ind_list = indicatorMeta[indicatorMeta.Dataset == dataset]["Indicator Code"].values
-    wdi_indicatorData_2010 = indicatorData[["Country Code", "Indicator Code", str(target_year)]]
-    # wdi_indicatorData_2010 = wdi_indicatorData_2010[wdi_indicatorData_2010["Country Code"].isin(SIDS)]
-    wdi_indicatorData_2010 = wdi_indicatorData_2010[wdi_indicatorData_2010["Indicator Code"].isin(ind_list)]
-    wdi_indicatorData_2010 = wdi_indicatorData_2010.set_index(["Country Code", "Indicator Code"])[
-        str(target_year)].unstack(level=1)
-    rank = missingness(wdi_indicatorData_2010)
-    top_ranked = rank[(rank.percent_missing < 80) & (rank.percent_missing > 0)]["column_name"].values
+def check_target_validity(target_year: str, dataset: str, target: str):
+    key = target_year + "_" + dataset
+    global Targets_top_ranked
+    load_indicator(target_year, dataset)
+    if key not in Targets_top_ranked or target not in Targets_top_ranked[key]:
+        raise HTTPException(status_code=400, detail=Error.INVALID_TARGET.value)
 
-    return (indicatorMeta[indicatorMeta["Indicator Code"].isin(top_ranked)].groupby("Indicator Code").nth(0))["Indicator"].to_dict()
+
+def load_indicator(target_year: str, dataset: str):
+    key = target_year + "_" + dataset
+    global Targets_top_ranked
+    if key not in Targets_top_ranked:
+        logging.info("Indicator list does not found in the cache for key %s", key)
+        ind_list = indicatorMeta[indicatorMeta.Dataset == dataset]["Indicator Code"].values
+        wdi_indicatorData_2010 = indicatorData[["Country Code", "Indicator Code", str(target_year)]]
+        # wdi_indicatorData_2010 = wdi_indicatorData_2010[wdi_indicatorData_2010["Country Code"].isin(SIDS)]
+        wdi_indicatorData_2010 = wdi_indicatorData_2010[wdi_indicatorData_2010["Indicator Code"].isin(ind_list)]
+        wdi_indicatorData_2010 = wdi_indicatorData_2010.set_index(["Country Code", "Indicator Code"])[
+            str(target_year)].unstack(level=1)
+        rank = missingness(wdi_indicatorData_2010)
+        Targets_top_ranked[key] = rank[(rank.percent_missing < 80) & (rank.percent_missing > 0)]["column_name"].values
+
+
+
+def get_indicator_list(target_year: str, dataset: str):
+    key = target_year + "_" + dataset
+    global Targets_top_ranked
+    load_indicator(target_year, dataset)
+    return (indicatorMeta[indicatorMeta["Indicator Code"].isin(Targets_top_ranked[key])].groupby("Indicator Code").nth(0))["Indicator"].to_dict()
 
 
 def query_and_train(manual_predictors, target_year, target, interpolator, scheme, estimators, model, interval,

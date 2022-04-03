@@ -1,11 +1,12 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.params import Depends
 
+from common.errors import Error
 from models.imputation.enums import Schema, Model, Interval, Interpolator
 from models.imputation.definitions import TrainRequest, ModelResponse, PredictorListRequest
 from common.logger import logger
 from models.imputation.model import query_and_train, get_indicator_list, get_predictor_list, get_target_years, \
-    dataset_options, dimension_options
+    dataset_options, dimension_options, check_year_validity, check_dataset_validity, check_target_validity, check_predictors_validity
 
 router = APIRouter(
     prefix="/imputation",
@@ -31,32 +32,51 @@ async def get_years():
 
 @router.get('/datasets')
 async def get_datasets(target_year: str = "2001"):
+    check_year_validity(target_year)
     return dataset_options(target_year)
 
 
 @router.get('/targets')
 async def get_indicators(target_year: str, dataset: str):
+    check_year_validity(target_year)
+    check_dataset_validity(target_year, dataset)
+
     return get_indicator_list(target_year, dataset)
+
+
+@router.get('/dimensions')
+async def get_dimensions(target: str, target_year: str, dataset: str):
+    check_year_validity(target_year)
+    check_dataset_validity(target_year, dataset)
+    check_target_validity(target_year, dataset, target)
+
+    return dimension_options(target, target_year)
 
 
 @router.post('/predictors')
 async def get_predictors(args: PredictorListRequest):
+    check_year_validity(args.target_year)
+    check_dataset_validity(args.target_year, args.dataset)
+    check_target_validity(args.target_year, args.dataset, args.target)
+
     return get_predictor_list(args.target, args.target_year, args.scheme)
-
-
-@router.get('/dimensions')
-async def get_dimensions(target: str, target_year: str):
-    return dimension_options(target, target_year)
 
 
 @router.post('/predict', response_model=ModelResponse)
 async def train_validate_predict(req: TrainRequest):
+    check_year_validity(req.target_year)
+    check_dataset_validity(req.target_year, req.dataset)
+    check_target_validity(req.target_year, req.dataset, req.target)
+
     logger.info("Request received %s", req.target)
 
     if req.scheme == Schema.MANUAL:
         manual_predictors = req.manual_predictors
+        check_predictors_validity(req.target_year, req.manual_predictors)
+
     else:
         manual_predictors = req.number_predictor
+
     avg_rmse, rmse, model_feature_importance, model_feature_names, prediction = \
         query_and_train(manual_predictors, req.target_year,
                         req.target,

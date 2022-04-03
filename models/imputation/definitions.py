@@ -11,6 +11,7 @@ from models.imputation import Interpolator, Schema, Model, Interval
 
 class PredictorListRequest(BaseModel):
     target_year: str = Field(..., title="The year under consideration", example="2001")
+    dataset: str = Field(..., title="Dataset", example="key")
     target: str = Field(..., title="Indicator whose values will be imputed", example="key-wdi-EG.ELC.ACCS.ZS")
     scheme: Schema = Field(..., title="Feature selection method selected by user", example=Schema.MANUAL.name)
 
@@ -35,6 +36,7 @@ class TrainRequest(BaseModel):
     estimators: int = Field(..., title="Number of trees for tree based models", example=10)
     model: Model = Field(..., title="Type of model to be trained", example=Model.rfr.name)
     interval: Interval = Field(..., title="Type of prediction interval", example=Interval.quantile.name)
+    dataset: str = Field(..., title="Dataset", example="key")
 
     @validator('*', pre=True)
     def validate_all(cls, v, field: ModelField, config, values):
@@ -47,8 +49,6 @@ class TrainRequest(BaseModel):
 
     @root_validator
     def validate_manual_predictors(cls, values):
-        logging.info("XXXX")
-        logging.info(values)
         if "scheme" in values and values["scheme"] == Schema.MANUAL and ("manual_predictors" not in values or values["manual_predictors"] is None):
             raise ValueError("manual_predictors field required for MANUAL scheme")
 
