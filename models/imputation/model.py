@@ -286,11 +286,11 @@ def model_trainer(X_train, X_test, y_train, seed, n_estimators, model_type, inte
 
     model_list = None
     if model_type == Model.all:
-        model_list = list(Model.__members__.items())
-        model_list.remove(Model.all)
+        model_list = [e for e in Model if e != Model.all]
     else:
         model_list = [model_type]
 
+    logging.info(model_list)
     model_instances = []
     params = []
 
@@ -421,7 +421,7 @@ def dimension_options(target, target_year):
 def check_dataset_validity(target_year, dataset):
     options = dataset_options(target_year)
     if options.get(dataset) is None:
-        raise HTTPException(status_code=400, detail=Error.INVALID_DATASET.format(list(options.keys())).value)
+        raise HTTPException(status_code=422, detail=Error.INVALID_DATASET.format(list(options.keys())).value)
 
 
 def dataset_options(target_year):
@@ -454,7 +454,7 @@ def get_target_years():
 
 def check_year_validity(year):
     if year not in supported_years:
-        raise HTTPException(status_code=400, detail=Error.INVALID_TARGET_YEAR.format(supported_years[0], supported_years[-1]).value)
+        raise HTTPException(status_code=422, detail=Error.INVALID_TARGET_YEAR.format(supported_years[0], supported_years[-1]).value)
 
 
 def load_predictos(target_year: str):
@@ -485,7 +485,7 @@ def check_predictors_validity(target_year, predictors):
 
     logging.info(invalid_predictors)
     if len(invalid_predictors) > 0:
-        raise HTTPException(status_code=400, detail=Error.INVALID_PREDICTOR.format(invalid_predictors).value)
+        raise HTTPException(status_code=422, detail=Error.INVALID_PREDICTOR.format(invalid_predictors).value)
 
 
 def get_predictor_list(target, target_year, scheme):
@@ -510,7 +510,7 @@ def check_target_validity(target_year: str, dataset: str, target: str):
     global Targets_top_ranked
     load_indicator(target_year, dataset)
     if key not in Targets_top_ranked or target not in Targets_top_ranked[key]:
-        raise HTTPException(status_code=400, detail=Error.INVALID_TARGET.value)
+        raise HTTPException(status_code=422, detail=Error.INVALID_TARGET.value)
 
 
 def load_indicator(target_year: str, dataset: str):
