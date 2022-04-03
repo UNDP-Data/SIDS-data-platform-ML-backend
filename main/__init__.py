@@ -1,5 +1,8 @@
 import sys
 import os
+
+from dependacy.azureFileHandler import AzureFileHandler
+
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
 import logging
@@ -18,6 +21,11 @@ app.include_router(imputation.router)
 @app.get("/")
 async def root():
     return {"message": "Hello SIDS ML Backend V6!"}
+
+
+@app.get("/datasets")
+async def list_datasets():
+    return AzureFileHandler().list_files("datasets")
 
 
 def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
