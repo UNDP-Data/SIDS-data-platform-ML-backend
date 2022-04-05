@@ -31,8 +31,8 @@ jobs:
     - name: 'Compose Docker Image'
       shell: bash
       run: |
-        docker build -t ${{ IMAGE_NAME }}:latest .
-        docker push ${{ IMAGE_NAME }}:latest
+        docker build -t ${{ env.IMAGE_NAME }}:latest .
+        docker push ${{ env.IMAGE_NAME }}:latest
 
     # Set the target Azure Kubernetes Service (AKS) cluster. 
     
