@@ -18,7 +18,7 @@ from sklearn.model_selection import GridSearchCV, cross_val_predict
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler
 
-from common.constants import SIDS
+from common.constants import SIDS, DATASETS_PATH
 from common.errors import Error
 from common.logger import logger
 from models.imputation import Schema, Interpolator, Interval, Model
@@ -54,7 +54,7 @@ def cou_ind_miss(Data):
     return countyIndicator_missingness
 
 
-def data_importer(percent=90, model_type="non-series", path="./datasets/"):
+def data_importer(percent=90, model_type="non-series", path=DATASETS_PATH):
     """
 
         Import csv files and restrructure the data into a country by indcator format. Model_type will be expanded upon.
@@ -71,8 +71,9 @@ def data_importer(percent=90, model_type="non-series", path="./datasets/"):
 
     import os
     cwd = os.getcwd()
-    logging.info('loading %s', path + "indicatorMeta.csv")
     logging.info("Current directory [%s]", cwd)
+    logging.info('loading %s', path + "indicatorMeta.csv")
+
     try:
         indicatorMeta = pd.read_csv(path + "indicatorMeta.csv")
         logging.info('indicatorMeta.csv loaded %s', path + "indicatorMeta.csv")
@@ -402,9 +403,7 @@ def load_dataset():
     if wb_data is None:
         wb_data, indicatorMeta, datasetMeta, indicatorData = data_importer(model_type="knn")
 
-
 load_dataset()
-
 
 def dimension_options(target, target_year):
     wdi_indicatorData_2010 = indicatorData[["Country Code", "Indicator Code", str(target_year)]]
@@ -539,7 +538,6 @@ def get_indicator_list(target_year: str, dataset: str):
 def query_and_train(manual_predictors, target_year, target, interpolator, scheme, estimators, model, interval,
                     ind_meta):
     logging.info('Data set loaded')
-
     # Train test (for prediction not validation) split
     X_train, X_test, y_train = preprocessing(data=indicatorData, target=target, target_year=target_year,
                                              interpolator=interpolator, SIDS=SIDS, percent=percent)

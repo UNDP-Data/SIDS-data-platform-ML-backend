@@ -1,13 +1,11 @@
 env:
-  REGISTRY_NAME: sidsakstest
-  CLUSTER_NAME: exampleaks01
-  CLUSTER_RESOURCE_GROUP: k8s-example-rg
+  REGISTRY_NAME: mlbackendacr
+  CLUSTER_NAME: mlbackendCluster
+  CLUSTER_RESOURCE_GROUP: undp-sids-rg
   NAMESPACE: default
-  APP_NAME: example01
-  SECRET: exampleactions
-  STROAGE_ACCOUNT: sidsakstest
-  STORAGE_CONTAINER: datasets
-  
+  APP_NAME: mlbackend
+  STROAGE_ACCOUNT: mlbackendsa
+
 on:
   push:
     branches:
@@ -19,45 +17,6 @@ jobs:
     steps:
     - name: 'Checkout GitHub Action'
       uses: actions/checkout@main
-
-    - name: Download Blob - datasetMeta.csv
-      uses: armanrahman22/azblob-download-action@v0.0.4
-      with:
-        storage-account-name: ${{ env.STROAGE_ACCOUNT }}
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-        container-name: ${{ env.STORAGE_CONTAINER }}
-        blob-name: "datasetMeta.csv"
-        download-path: "./datasets/"
-    - name: Download Blob indicatorCategories.json
-      uses: armanrahman22/azblob-download-action@v0.0.4
-      with:
-        storage-account-name: ${{ env.STROAGE_ACCOUNT }}
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-        container-name: ${{ env.STORAGE_CONTAINER }}
-        blob-name: "indicatorCategories.json"
-        download-path: "./datasets/"
-
-    - name: Download Blob - indicatorData.csv
-      uses: armanrahman22/azblob-download-action@v0.0.4
-      with:
-        storage-account-name: ${{ env.STROAGE_ACCOUNT }}
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-        container-name: ${{ env.STORAGE_CONTAINER }}
-        blob-name: "indicatorData.csv"
-        download-path: "./datasets/"
-
-    - name: Download Blob - indicatorMeta.csv
-      uses: armanrahman22/azblob-download-action@v0.0.4
-      with:
-        storage-account-name: ${{ env.STROAGE_ACCOUNT }}
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-        container-name: ${{ env.STORAGE_CONTAINER }}
-        blob-name: "indicatorMeta.csv"
-        download-path: "./datasets/"
-
-    - name: View Output
-      run: |
-        ls ./datasets/
     
     # Connect to Azure Container Registry (ACR)
     - name: 'Docker Login'
@@ -76,27 +35,14 @@ jobs:
 
     # Set the target Azure Kubernetes Service (AKS) cluster. 
     
-    - uses: azure/aks-set-context@v1
+    - name: 'Set the target AKS'
+      uses: azure/aks-set-context@v1
       with:
         creds: '${{ secrets.AZURE_CREDENTIALS }}'
         cluster-name: ${{ env.CLUSTER_NAME }}
         resource-group: ${{ env.CLUSTER_RESOURCE_GROUP }}
-    
-    # # Create namespace if doesn't exist
-    # - run: |
-    #     kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o json | kubectl apply -f -
-    
-    # # Create image pull secret for ACR
-    # - uses: azure/k8s-create-secret@v1
-    #   with:
-    #     container-registry-url: ${{ env.REGISTRY_NAME }}.azurecr.io
-    #     container-registry-username: ${{ secrets.REGISTRY_USERNAME }}
-    #     container-registry-password: ${{ secrets.REGISTRY_PASSWORD }}
-    #     secret-name: ${{ env.SECRET }}
-    #     namespace: ${{ env.NAMESPACE }}
-    #     arguments: --force true
 
-    - name: Deploy
+    - name: Rollout pod restart
       run: kubectl rollout restart deployment ${{ env.APP_NAME }}-http --namespace=${{ env.NAMESPACE }}
     
     # # Deploy app to AKS

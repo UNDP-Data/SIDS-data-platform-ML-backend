@@ -7,5 +7,4 @@ scikit-learn==1.0.2
 numpy
 pandas
 pycountry
-azure-storage-blob
-azure-identity
+python-multipart
