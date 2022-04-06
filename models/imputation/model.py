@@ -4,8 +4,7 @@ import os
 
 import numpy as np
 import pandas as pd
-# Country name format
-import pycountry
+
 # Propcessing and training
 from fastapi import HTTPException
 from sklearn.decomposition import PCA
@@ -384,8 +383,7 @@ def model_trainer(X_train, X_test, y_train, seed, n_estimators, model_type, inte
 
     # Predict for SIDS countries with missing values
     prediction = prediction[prediction.index.isin(SIDS)]
-    prediction.index = [pycountry.countries.get(alpha_3=i).name for i in prediction.index]
-    prediction = prediction.reset_index().rename(columns={"index": "country"})
+    prediction = prediction.reset_index().rename(columns={"index": "country"}).to_dict(orient='list')
     #################### Prediction dataframe and best_model instance are the final results of the ML################
 
     return prediction, rmse, gs, best_model
