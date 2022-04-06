@@ -542,6 +542,10 @@ def query_and_train(manual_predictors, target_year, target, interpolator, scheme
     logging.info('Feature selection completed')
     # training and prediction for X_test
     prediction, rmse, gs, best_model = model_trainer(X_train, X_test, y_train, seed, estimators, model, interval)
+    
+    # data for pie chart for feature importance 
+    features = indicatorMeta[indicatorMeta["Indicator Code"].isin(X_train.columns)]
+    feature_importance_pie =pd.DataFrame(data={"category":features.Category.values,"value":best_model.feature_importances_}).groupby("category").sum().reset_index().to_dict(orient="list")
 
     return (
-                   rmse / y_train.mean()).item(), rmse.item(), best_model.feature_importances_.tolist(), best_model.feature_names_in_.tolist(), prediction,correlation
+                   rmse / y_train.mean()).item(), rmse.item(), best_model.feature_importances_.tolist(), best_model.feature_names_in_.tolist(), prediction,correlation,feature_importance_pie
