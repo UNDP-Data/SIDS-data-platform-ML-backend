@@ -6,7 +6,7 @@ model as exposed it as an azure function service inside a Kubernetes cluster.
 
 ## System Architecture
 
-![Layout diagram](./docs/images/layout.png?raw=true "Title")
+<img src="./docs/images/layout.png?raw=true" height="500px">
 
 The system layout on Azure Kubernetes Service(AKS) is shown in the above diagram. Kubernetes cluster created inside an Azure Virtual Private Network (VNET), and all the external traffic coming through
 Azure load balancer resource configures an external IP address and connects the requested pods to the load balancer backend pool. Load balancing rules are created on the desired ports to allow customers' traffic to reach the application.
