@@ -1,10 +1,10 @@
-#SID ML Backend
+# SID ML Backend
 
-##Introduction
+## Introduction
 Implementation for the SID ML model execution backend. Currently, implemented only for K-NN Imputes based prediction 
 model as exposed it as an azure function service inside a Kubernetes cluster. 
 
-##System Architecture
+## System Architecture
 
 ![Layout diagram](./docs/images/layout.png?raw=true "Title")
 
@@ -21,7 +21,7 @@ in the way that can support multiple models as a single Kubernetes service or mu
 - Single Service is suitable if we use the same dataset for different models or multiple small datasets.
 - Multiple Services is suitable when we have multiple large datasets. With this approach, we can maximize node utilization. If we need to add a new service, we need to update the Kubernetes manifest and update the cluster.
   
-###Scalability
+### Scalability
 Current Kubernetes deployment automatically scales up and down using two ways,
 1. **Cluster Autoscaler** - Watches for pods that can't be scheduled on nodes because of resource constraints. 
    The cluster then automatically increases the number of nodes. The current cluster is configured for a maximum of three nodes and a minimum of one node.
@@ -45,7 +45,7 @@ Current Kubernetes deployment automatically scales up and down using two ways,
 Please refer [link](https://docs.microsoft.com/en-us/azure/aks/cluster-autoscaler) for more information.
 
 
-###Security
+### Security
 Since the Kubernetes cluster is created inside a private network, an external party does not have direct access to the cluster 
 except through the load balancer. 
 
@@ -63,13 +63,13 @@ Security features supported by Azure
 - Firewall - [Pricing](https://azure.microsoft.com/en-us/pricing/details/azure-firewall/#pricing)
 
 
-###Fault Tolerance
+### Fault Tolerance
 Since the current minimum replica count and minimum node count is one, there can be 2~3 minutes of system unavailability
 . If we increase it to above 1, it will minimize the unavailable probability.
 But the system automatically receivers from any system unavailability.
 
-##Developer Guide
-###Folder Structure
+## Developer Guide
+### Folder Structure
 Source code repository structured in the following way
 
 - **main** - Root RESTAPI implementation and azure function configuration
@@ -85,9 +85,9 @@ Source code repository structured in the following way
      manually run ```kubectl apply -f ./deployment/k8_keda.yml```
 - **models** - Contains individual model implementation, RestAPI endpoints, model-specific constants and message definitions. 
 
-##Deployment
+## Deployment
 
-###Setup Azure Kubernetes Cluster
+### Setup Azure Kubernetes Cluster
 1. Install Azure core tools - [link](https://github.com/Azure/azure-functions-core-tools).
 2. Install Azure CLI - [link](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
 3. Install docker
@@ -107,7 +107,7 @@ CI/CD implemented using Github Actions.[config file](./.github/workflows/main.ym
 
 ## Testing
 
-###Local Environment Setup
+### Local Environment Setup
 1. Install Azure core tools - [link](https://github.com/Azure/azure-functions-core-tools).
 2. Copy dataset files to the dataset folder in the root directory.
 3. Run `func start host`. This will start the azure function locally.
