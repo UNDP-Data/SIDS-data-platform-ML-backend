@@ -7,7 +7,7 @@ import pandas as pd
 
 # Propcessing and training
 from fastapi import HTTPException
-from sklearn.decomposition import PCA
+from pca import pca
 from sklearn.ensemble import ExtraTreesRegressor, RandomForestRegressor, GradientBoostingRegressor
 from sklearn.experimental import enable_iterative_imputer  # noqa
 from sklearn.feature_selection import RFE
@@ -240,30 +240,21 @@ def feature_selection(X_train, X_test, y_train, target, manual_predictors, schem
         # Take the most import predictor_number number of independent variables (via RFE) and plot correlation
         importance_boolean = feature_selector(X_train=X_train, y_train=y_train, manual_predictors=manual_predictors)
         prediction_features = (X_train.columns[importance_boolean].tolist())
-        # query_card = correlation_plotter(target,prediction_features, training_data, ind_meta)
-        X_train = X_train[prediction_features]
-        X_test = X_test[prediction_features]
+
 
     elif scheme == Schema.PCA:
-        pca = PCA(n_components=manual_predictors)
-        pca.fit(X_train)
-        columns = ["pca " + str(i) for i in list(range(manual_predictors))]
-        X_train = pd.DataFrame(pca.transform(X_train), columns=columns, index=X_train.index)
-        X_test = pd.DataFrame(pca.transform(X_test), columns=columns, index=X_test.index)
-        #### Temporary ####
-        # correlation= X_train.copy()
-        # correlation[ind_meta[ind_meta["Indicator Code"]==target].Indicator.values[0]] = y_train.values
-        # query_card = px.imshow(correlation.corr(),x=correlation.columns,y=correlation.columns, color_continuous_scale=px.colors.sequential.Blues, title= 'Correlation plot')
-
-
+        PCA = pca()
+        out = PCA.fit_transform(X_train)
+        prediction_features = list(out['topfeat'].iloc[list(range(manual_predictors)),1].values)
 
     else:
         prediction_features = manual_predictors
-        # query_card = correlation_plotter(target,prediction_features, training_data, ind_meta)
-        X_train = X_train[prediction_features]
-        X_test = X_test[prediction_features]
 
-    return X_train, X_test  # ,query_card
+
+    X_train = X_train[prediction_features]
+    X_test = X_test[prediction_features]
+
+    return X_train, X_test  
 
 
 # Train model and predict
