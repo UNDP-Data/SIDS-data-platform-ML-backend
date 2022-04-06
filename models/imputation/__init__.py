@@ -77,7 +77,7 @@ async def train_validate_predict(req: TrainRequest):
     else:
         manual_predictors = req.number_predictor
 
-    avg_rmse, rmse, model_feature_importance, model_feature_names, prediction = \
+    avg_rmse, rmse, model_feature_importance, model_feature_names, prediction,correlation = \
         query_and_train(manual_predictors, req.target_year,
                         req.target,
                         req.interpolator,
@@ -86,4 +86,4 @@ async def train_validate_predict(req: TrainRequest):
                         req.model,
                         req.interval, None)
     logger.info("Return values %f %f", rmse, avg_rmse)
-    return ModelResponse(rmse_deviation=avg_rmse, rmse=rmse, model_feature_importance=model_feature_importance, model_feature_names=model_feature_names, prediction=prediction)
+    return ModelResponse(rmse_deviation=avg_rmse, rmse=rmse, model_feature_importance=model_feature_importance, model_feature_names=model_feature_names, prediction=prediction,correlation=correlation)

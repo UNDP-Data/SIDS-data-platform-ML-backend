@@ -233,7 +233,7 @@ def feature_selection(X_train, X_test, y_train, target, manual_predictors, schem
     Returns:
         X_train: reduced training data
         X_test: reduced testing data
-        query_card: correlation plot of X_train (ignore for now)
+        correlation: correlation matrix of X_train (ignore for now)
     """
 
     if scheme == Schema.AFS:
@@ -254,7 +254,11 @@ def feature_selection(X_train, X_test, y_train, target, manual_predictors, schem
     X_train = X_train[prediction_features]
     X_test = X_test[prediction_features]
 
-    return X_train, X_test  
+    correlation = X_train[prediction_features].corr()
+    correlation.index = prediction_features
+    correlation.columns = prediction_features
+
+    return X_train, X_test,correlation.to_dict(orient ='split')
 
 
 # Train model and predict
@@ -533,11 +537,11 @@ def query_and_train(manual_predictors, target_year, target, interpolator, scheme
 
     logging.info('Data preprocessed')
     # Dimension reduction based on scheme
-    X_train, X_test = feature_selection(X_train, X_test, y_train, target, manual_predictors, scheme)
+    X_train, X_test,correlation = feature_selection(X_train, X_test, y_train, target, manual_predictors, scheme)
 
     logging.info('Feature selection completed')
     # training and prediction for X_test
     prediction, rmse, gs, best_model = model_trainer(X_train, X_test, y_train, seed, estimators, model, interval)
 
     return (
-                   rmse / y_train.mean()).item(), rmse.item(), best_model.feature_importances_.tolist(), best_model.feature_names_in_.tolist(), prediction
+                   rmse / y_train.mean()).item(), rmse.item(), best_model.feature_importances_.tolist(), best_model.feature_names_in_.tolist(), prediction,correlation
