@@ -8,7 +8,7 @@ fullAcrName=$acrName.azurecr.io
 imageName=$fullAcrName/core:latest
 aksName=mlbackendCluster
 aksShareName=aksshare
-subscriptionId=006c8a06-bc98-4f2e-a166-b56f87c77268
+subscriptionId="<subscription id>"
 
 echo $resourceGroup, $location, $acrName, $storageAccount, $functionAppName, $fullAcrName, $imageName, $aksName
 

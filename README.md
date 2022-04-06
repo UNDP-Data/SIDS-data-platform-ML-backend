@@ -68,6 +68,10 @@ Since the current minimum replica count and minimum node count is one, there can
 . If we increase it to above 1, it will minimize the unavailable probability.
 But the system automatically receivers from any system unavailability.
 
+### Storage
+Using Azure Storage File Share to store model datasets. File Share mounted on the docker container at the startup as a volume with read and write access. 
+All the pods sharing the same storage. 
+
 ## Developer Guide
 ### Folder Structure
 Source code repository structured in the following way
