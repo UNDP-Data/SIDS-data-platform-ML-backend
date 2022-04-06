@@ -1,3 +1,4 @@
+# Define variables
 resourceGroup=undp-sids-rg
 location=eastus
 acrName=mlbackendacr
@@ -7,6 +8,7 @@ fullAcrName=$acrName.azurecr.io
 imageName=$fullAcrName/core:latest
 aksName=mlbackendCluster
 aksShareName=aksshare
+subscriptionId=006c8a06-bc98-4f2e-a166-b56f87c77268
 
 echo $resourceGroup, $location, $acrName, $storageAccount, $functionAppName, $fullAcrName, $imageName, $aksName
 
@@ -67,3 +69,16 @@ docker push $imageName
 
 echo "Do the required ./deployment/k8_keda.yml file and execute following command"
 echo "kubectl apply -f ./deployment/k8_keda.yml"
+
+echo "Use following values for CI/CD. You must protect following credentials."
+
+echo "REGISTRY_USERNAME"
+echo $acrName
+
+echo "REGISTRY_PASSWORD"
+echo $password
+
+echo "AZURE_CREDENTIALS"
+az ad sp create-for-rbac --name $functionAppName --role contributor \
+                                --scopes /subscriptions/$subscriptionId/resourceGroups/$resourceGroup \
+                                --sdk-auth

@@ -10,7 +10,7 @@ from wsgiref.headers import Headers
 from azure.functions._abc import Context
 from azure.functions._http import HttpRequest, HttpResponse
 from azure.functions._http_wsgi import WsgiRequest
-√
+
 
 class AsgiRequest(WsgiRequest):
     def __init__(self, func_req: HttpRequest,
