@@ -397,7 +397,7 @@ def load_dataset():
         wb_data, indicatorMeta, datasetMeta, indicatorData = data_importer(model_type="knn")
 
 
-if os.getenv("SERVICE") is None or os.getenv("SERVICE") == "imputation":
+if os.getenv("MODEL_SERVICE") is None or os.getenv("MODEL_SERVICE") == "imputation":
     load_dataset()
 
 
