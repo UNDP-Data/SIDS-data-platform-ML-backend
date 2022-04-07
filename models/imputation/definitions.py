@@ -64,3 +64,5 @@ class ModelResponse(BaseModel):
     model_feature_importance: Optional[List[float]]
     model_feature_names: Optional[List[str]]
     prediction: Optional[dict]
+    correlation: Optional[dict]
+    feature_importance_pie: Optional[dict]
