@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import logging
 import azure.functions as func
 from api_app import app
-from models import imputation
+from models import imputation, timeseries
 
 try:
     from azure.functions import AsgiMiddleware
@@ -20,6 +20,7 @@ except ImportError:
     from functions._http_asgi import AsgiMiddleware
 
 app.include_router(imputation.router)
+app.include_router(timeseries.router)
 
 
 @app.get("/")
