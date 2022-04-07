@@ -6,5 +6,5 @@ fastapi~=0.75.0
 scikit-learn==1.0.2
 numpy
 pandas
-pycountry
+pca
 python-multipart

@@ -4,11 +4,10 @@ import os
 
 import numpy as np
 import pandas as pd
-# Country name format
-import pycountry
+
 # Propcessing and training
 from fastapi import HTTPException
-from sklearn.decomposition import PCA
+from pca import pca
 from sklearn.ensemble import ExtraTreesRegressor, RandomForestRegressor, GradientBoostingRegressor
 from sklearn.experimental import enable_iterative_imputer  # noqa
 from sklearn.feature_selection import RFE
@@ -234,37 +233,32 @@ def feature_selection(X_train, X_test, y_train, target, manual_predictors, schem
     Returns:
         X_train: reduced training data
         X_test: reduced testing data
-        query_card: correlation plot of X_train (ignore for now)
+        correlation: correlation matrix of X_train (ignore for now)
     """
 
     if scheme == Schema.AFS:
         # Take the most import predictor_number number of independent variables (via RFE) and plot correlation
         importance_boolean = feature_selector(X_train=X_train, y_train=y_train, manual_predictors=manual_predictors)
         prediction_features = (X_train.columns[importance_boolean].tolist())
-        # query_card = correlation_plotter(target,prediction_features, training_data, ind_meta)
-        X_train = X_train[prediction_features]
-        X_test = X_test[prediction_features]
+
 
     elif scheme == Schema.PCA:
-        pca = PCA(n_components=manual_predictors)
-        pca.fit(X_train)
-        columns = ["pca " + str(i) for i in list(range(manual_predictors))]
-        X_train = pd.DataFrame(pca.transform(X_train), columns=columns, index=X_train.index)
-        X_test = pd.DataFrame(pca.transform(X_test), columns=columns, index=X_test.index)
-        #### Temporary ####
-        # correlation= X_train.copy()
-        # correlation[ind_meta[ind_meta["Indicator Code"]==target].Indicator.values[0]] = y_train.values
-        # query_card = px.imshow(correlation.corr(),x=correlation.columns,y=correlation.columns, color_continuous_scale=px.colors.sequential.Blues, title= 'Correlation plot')
-
-
+        PCA = pca()
+        out = PCA.fit_transform(X_train)
+        prediction_features = list(out['topfeat'].iloc[list(range(manual_predictors)),1].values)
 
     else:
         prediction_features = manual_predictors
-        # query_card = correlation_plotter(target,prediction_features, training_data, ind_meta)
-        X_train = X_train[prediction_features]
-        X_test = X_test[prediction_features]
 
-    return X_train, X_test  # ,query_card
+
+    X_train = X_train[prediction_features]
+    X_test = X_test[prediction_features]
+
+    correlation = X_train[prediction_features].corr()
+    correlation.index = prediction_features
+    correlation.columns = prediction_features
+
+    return X_train, X_test,correlation.to_dict(orient ='split')
 
 
 # Train model and predict
@@ -384,8 +378,7 @@ def model_trainer(X_train, X_test, y_train, seed, n_estimators, model_type, inte
 
     # Predict for SIDS countries with missing values
     prediction = prediction[prediction.index.isin(SIDS)]
-    prediction.index = [pycountry.countries.get(alpha_3=i).name for i in prediction.index]
-    prediction = prediction.reset_index().rename(columns={"index": "country"})
+    prediction = prediction.reset_index().rename(columns={"index": "country"}).to_dict(orient='list')
     #################### Prediction dataframe and best_model instance are the final results of the ML################
 
     return prediction, rmse, gs, best_model
@@ -544,11 +537,15 @@ def query_and_train(manual_predictors, target_year, target, interpolator, scheme
 
     logging.info('Data preprocessed')
     # Dimension reduction based on scheme
-    X_train, X_test = feature_selection(X_train, X_test, y_train, target, manual_predictors, scheme)
+    X_train, X_test,correlation = feature_selection(X_train, X_test, y_train, target, manual_predictors, scheme)
 
     logging.info('Feature selection completed')
     # training and prediction for X_test
     prediction, rmse, gs, best_model = model_trainer(X_train, X_test, y_train, seed, estimators, model, interval)
+    
+    # data for pie chart for feature importance 
+    features = indicatorMeta[indicatorMeta["Indicator Code"].isin(X_train.columns)]
+    feature_importance_pie =pd.DataFrame(data={"category":features.Category.values,"value":best_model.feature_importances_}).groupby("category").sum().reset_index().to_dict(orient="list")
 
     return (
-                   rmse / y_train.mean()).item(), rmse.item(), best_model.feature_importances_.tolist(), best_model.feature_names_in_.tolist(), prediction
+                   rmse / y_train.mean()).item(), rmse.item(), best_model.feature_importances_.tolist(), best_model.feature_names_in_.tolist(), prediction,correlation,feature_importance_pie
