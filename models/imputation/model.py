@@ -403,7 +403,10 @@ def load_dataset():
     if wb_data is None:
         wb_data, indicatorMeta, datasetMeta, indicatorData = data_importer(model_type="knn")
 
-load_dataset()
+
+if os.getenv("SERVICE") is None or os.getenv("SERVICE") == "imputation":
+    load_dataset()
+
 
 def dimension_options(target, target_year):
     wdi_indicatorData_2010 = indicatorData[["Country Code", "Indicator Code", str(target_year)]]
