@@ -133,7 +133,7 @@ spec:
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
-  name: mlbackend-http
+  name: autoscaler-mlbackend-http
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -219,7 +219,8 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - http:
+  - host: mlbackendc-undp-sids-rg-006c8a-318c8282.hcp.eastus.azmk8s.io
+    http:
       paths:
       - path: /imputation
         pathType: Prefix

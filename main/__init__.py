@@ -1,3 +1,4 @@
+import importlib
 import sys
 import os
 from typing import List
@@ -12,15 +13,24 @@ sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import logging
 import azure.functions as func
 from api_app import app
-from models import imputation, timeseries
+from models import imputation, sampleapi
 
 try:
     from azure.functions import AsgiMiddleware
 except ImportError:
     from functions._http_asgi import AsgiMiddleware
 
-app.include_router(imputation.router)
-app.include_router(timeseries.router)
+
+for subdir, dirs, files in os.walk("./models/"):
+    for d in dirs:
+        if not d.startswith("_") and not d.startswith("."):
+            try:
+                module = importlib.import_module('models.' + d)
+                router = getattr(module, 'router')
+                app.include_router(router)
+                logging.info("Loaded model " + d)
+            except Exception as e:
+                logging.info("Failed to load model " + d + " " + str(e))
 
 
 @app.get("/")
