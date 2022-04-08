@@ -9,8 +9,8 @@ app = fastapi.FastAPI(
 )
 
 origins = [
-    "https://lenseg.github.io/SIDSDataPlatform/",
-    "https://sids-dashboard.github.io/SIDSDataPlatform/",
+    "https://lenseg.github.io/SIDSDataPlatform",
+    "https://sids-dashboard.github.io/SIDSDataPlatform",
     "http://localhost",
     "http://localhost:8080",
 ]

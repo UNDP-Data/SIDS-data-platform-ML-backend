@@ -84,6 +84,13 @@ spec:
       containers:
       - name: mlbackend-http
         image: mlbackendacr.azurecr.io/core:latest
+        resources:
+          limits:
+            cpu: 300m
+            memory: 2048Mi
+          requests:
+            cpu: 100m
+            memory: 512Mi
         volumeMounts:
           - name: azure
             mountPath: /mnt/azure
