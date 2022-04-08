@@ -145,20 +145,21 @@ CI/CD implemented using Github Actions.[config file](./.github/workflows/main.ym
         return "Hi "+name
 
    ```
-This endpoint will automatically add in to the swagger documentation as a new session. 
+    This endpoint will automatically add in to the swagger documentation as a new session. 
 
-**IMPORTANT: `router` object name must be same in every model. All other functions and variables can rename and rearrange the way you want**
+    **IMPORTANT: `router` object name must be same in every model. All other functions and variables can rename and rearrange the way you want**
 
-For readability message definitions can move in to a separate file. 
+    For readability message definitions can move in to a separate file. 
 
-Add custom validators for message fields at the API level as below. 
-```
-@validator('requiredField')
-def username_alphanumeric(cls, v):
-    assert v.isalnum(), 'must be alphanumeric'
-    return v
- ```
-please refer [pydantic validators](https://pydantic-docs.helpmanual.io/usage/validators/) for more information.
+    Add custom validators for message fields at the API level as below. 
+    ```
+    @validator('requiredField')
+    def username_alphanumeric(cls, v):
+        assert v.isalnum(), 'must be alphanumeric'
+        return v
+     ```
+    please refer [pydantic validators](https://pydantic-docs.helpmanual.io/usage/validators/) for more information.
+
 3. Use `DATASET_PATH` environment variable for dataset loading. 
 
 ## Testing
