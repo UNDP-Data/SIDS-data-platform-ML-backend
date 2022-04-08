@@ -6,8 +6,9 @@ from models.imputation.enums import Schema, Model, Interval, Interpolator
 from models.imputation.definitions import TrainRequest, ModelResponse, PredictorListRequest
 from common.logger import logger
 from models.imputation.model import query_and_train, get_indicator_list, get_predictor_list, get_target_years, \
-    dataset_options, dimension_options, check_year_validity, check_dataset_validity, check_target_validity, check_predictors_validity
-
+    dataset_options, dimension_options, check_year_validity, check_dataset_validity, check_target_validity, check_predictors_validity, \
+    target_sample_size_requirement, predictor_sample_size_requirement
+        
 router = APIRouter(
     prefix="/imputation",
     tags=["Imputation"],
@@ -23,6 +24,15 @@ async def get_params():
         "Interpolator": Interpolator.__members__.items(),
         "Interval": Interval.__members__.items(),
     }
+
+
+@router.get('/target_sample_size')
+async def get_target_sample_size():
+    return target_sample_size_requirement()
+
+@router.get('/predictor_sample_size')
+async def get_predictor_sample_size():
+    return predictor_sample_size_requirement()
 
 
 @router.get('/target_years')
