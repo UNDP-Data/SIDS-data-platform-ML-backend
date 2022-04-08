@@ -109,6 +109,58 @@ CI/CD implemented using Github Actions.[config file](./.github/workflows/main.ym
 - Build a docker container and push it to the Azure Container Registry (ACR)
 - Perform rollout pod restart in Kubernetes cluster.
 
+### Steps to Add New Model API
+1. Create new python module inside models similar to `imputation`
+2. Create a `__init__.py` file inside newly created module and define all the fast api endpoints. 
+   Example
+    ```
+    from typing import Optional
+    from fastapi import APIRouter
+    from pydantic import BaseModel, Field
+    
+    
+    class SampleRequest(BaseModel):
+        requiredField: str = Field(None, title="This field is required", example="required 123")
+        optionalField: Optional[str] = Field(None, title="This field is optional", example="optional 123")
+    
+    
+    class SampleResponse(BaseModel):
+        resp1: str
+    
+    
+    router = APIRouter(
+        prefix="/sample_model",
+        tags=["Sample Model"],
+        responses={404: {"description": "Not found"}},
+    )
+    
+    
+    @router.post('/test_endpoint1', response_model=SampleResponse)
+    async def test_endpoint1(req: SampleRequest):
+        return SampleResponse(resp1="Test 1")
+    
+    
+    @router.post('/test_endpoint2')
+    async def test_endpoint1(name: str):
+        return "Hi "+name
+
+   ```
+This endpoint will automatically add in to the swagger documentation as a new session. 
+
+**IMPORTANT: `router` object name must be same in every model. All other functions and variables can rename and rearrange the way you want**
+
+For readability message definitions can move in to a separate file. 
+
+Add custom validators for message fields at the API level as below. 
+```
+@validator('requiredField')
+def username_alphanumeric(cls, v):
+    assert v.isalnum(), 'must be alphanumeric'
+    return v
+ ```
+please refer [pydantic validators](https://pydantic-docs.helpmanual.io/usage/validators/) for more information.
+3. Use `DATASET_PATH` environment variable for dataset loading. 
+
 ## Testing
 
 ### Local Environment Setup
