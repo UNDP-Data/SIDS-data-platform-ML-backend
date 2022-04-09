@@ -1,14 +1,15 @@
 # Define variables
-resourceGroup=undp-sids-rg
+resourceGroup=ml-rg-undp
 location=eastus
-acrName=mlbackendacr
-storageAccount=mlbackendsa
-functionAppName=mlbackend
+acrName=acrmlbackend
+storageAccount=samlbackend
+functionAppName=sidmlbackend
 fullAcrName=$acrName.azurecr.io
-imageName=$fullAcrName/core:latest
-aksName=mlbackendCluster
+imageName=$fullAcrName/$functionAppName:latest
+aksName=sidmlbackendCluster
 aksShareName=aksshare
-subscriptionId="<subscription id>"
+subscriptionId="<subscription Id>"
+aksGateway=agmlbackend
 
 echo $resourceGroup, $location, $acrName, $storageAccount, $functionAppName, $fullAcrName, $imageName, $aksName
 
@@ -29,6 +30,9 @@ az storage account create --name $storageAccount --location $location --resource
 
 echo "Creating AKS cluster"
 az aks create \
+  --network-plugin azure --enable-managed-identity -a ingress-appgw \
+  --appgw-name $aksGateway \
+  --appgw-subnet-cidr "10.2.0.0/16" \
   --resource-group $resourceGroup \
   --name $aksName \
   --node-count 1 \
@@ -39,6 +43,8 @@ az aks create \
   --max-count 3 \
   --enable-addons monitoring \
   --generate-ssh-keys
+
+az aks create -n $aksName --node-count 1 --enable-addons monitoring --enable-cluster-autoscaler --min-count 1 --max-count 3 -g $resourceGroup --network-plugin azure --enable-managed-identity -a ingress-appgw --appgw-name $aksGateway --appgw-subnet-cidr "10.2.0.0/16" --generate-ssh-keys
 
 az aks get-credentials --resource-group $resourceGroup --name $aksName
 
@@ -59,7 +65,7 @@ kubectl create secret generic azure-secret --from-literal=azurestorageaccountnam
 az aks update --name $aksName --resource-group $resourceGroup --attach-acr $acrName
 
 echo "Generating kubernetes manifest file"
-func kubernetes deploy --name $functionAppName --registry $fullAcrName --dry-run > ./deployment/k8_keda.yml
+func kubernetes deploy --name $functionAppName --registry $fullAcrName --dry-run > ./deployment/k8_keda_gen.yml
 
 echo "Building docker image"
 docker build -t $imageName .
@@ -67,7 +73,7 @@ docker build -t $imageName .
 echo "Pushing docker image"
 docker push $imageName
 
-echo "Do the required ./deployment/k8_keda.yml file and execute following command"
+echo "Do the required updates to the ./deployment/k8_keda.yml file and execute following command"
 echo "kubectl apply -f ./deployment/k8_keda.yml"
 
 echo "Use following values for CI/CD. You must protect following credentials."
@@ -82,3 +88,10 @@ echo "AZURE_CREDENTIALS"
 az ad sp create-for-rbac --name $functionAppName --role contributor \
                                 --scopes /subscriptions/$subscriptionId/resourceGroups/$resourceGroup \
                                 --sdk-auth
+
+#az network application-gateway ssl-cert create \
+#   --resource-group $(az aks show --name $aksName --resource-group $resourceGroup --query nodeResourceGroup | tr -d '"') \
+#   --gateway-name $aksGateway\
+#   --name httpCert \
+#   --cert-file certificate.pfx \
+#   --cert-password <password>
