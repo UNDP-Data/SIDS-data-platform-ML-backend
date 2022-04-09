@@ -65,7 +65,7 @@ kubectl create secret generic azure-secret --from-literal=azurestorageaccountnam
 az aks update --name $aksName --resource-group $resourceGroup --attach-acr $acrName
 
 echo "Generating kubernetes manifest file"
-func kubernetes deploy --name $functionAppName --registry $fullAcrName --dry-run > ./deployment/k8_keda_gen.yml
+func kubernetes deploy --name $functionAppName --registry $fullAcrName --dry-run > ./deployment/k8_keda.yml
 
 echo "Building docker image"
 docker build -t $imageName .

@@ -4,8 +4,6 @@ import os
 from typing import List
 
 from fastapi import File, UploadFile
-from starlette.requests import Request
-from starlette.responses import RedirectResponse
 
 from common.constants import DATASETS_PATH
 from common.utils import save_file
@@ -34,10 +32,6 @@ for subdir, dirs, files in os.walk("./models/"):
             except Exception as e:
                 logging.info("Failed to load model " + d + " " + str(e))
 
-
-# @app.route('/{_:path}')
-# async def https_redirect(request: Request):
-#     return RedirectResponse(request.url.replace(scheme='https'))
 
 @app.get("/")
 async def root():
