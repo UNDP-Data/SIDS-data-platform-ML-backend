@@ -1,11 +1,11 @@
 env:
-  REGISTRY_NAME: mlbackendacr
-  CLUSTER_NAME: mlbackendCluster
-  CLUSTER_RESOURCE_GROUP: undp-sids-rg
+  REGISTRY_NAME: acrmlbackend
+  CLUSTER_NAME: sidmlbackendCluster
+  CLUSTER_RESOURCE_GROUP: ml-rg-undp
   NAMESPACE: default
-  APP_NAME: mlbackend
-  STROAGE_ACCOUNT: mlbackendsa
-  IMAGE_NAME: mlbackendacr.azurecr.io/core
+  APP_NAME: sidmlbackend
+  STROAGE_ACCOUNT: samlbackend
+  IMAGE_NAME: acrmlbackend.azurecr.io/sidmlbackend
 
 on:
   push:
