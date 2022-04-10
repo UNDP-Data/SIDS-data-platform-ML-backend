@@ -216,7 +216,7 @@ folder as k8_keda_main.yml. Please do follow updates as your requirement.
 11. Cluster will be ready in a few minutes. View swagger documentation from http://<domain>/docs
 
 ### CI/CD
-CI/CD implemented using Github Actions.[config file](./.github/workflows/main.yml). It performs the following actions
+CI/CD implemented using Github Actions. [config file](./.github/workflows/main.yml). It performs the following actions
 - Build a docker container and push it to the Azure Container Registry (ACR)
 - Perform rollout pod restart in Kubernetes cluster.
 
@@ -272,7 +272,27 @@ def username_alphanumeric(cls, v):
 please refer [pydantic validators](https://pydantic-docs.helpmanual.io/usage/validators/) for more information.
 
 3. Use `DATASET_PATH` environment variable for dataset loading. 
+4. By default, newly added endpoint will route through default Kubernetes service.
 
+#### Add Model Endpoint as a New Kubernetes Service
+1. It is better to serve as a different service on following reasons
+   - Use different datasets. 
+   - Different resource usage.
+2. It will enable independent resource configurability and scalability.
+3. Deployment steps as follows,
+   1. Update [kubernetes service & deployment file](./deployment/service-deployment-template.yml) by <service name> and <model folder name>.
+   2. Create new service by running `kubectl apply -f ./deployment/service-deployment-template.yml`
+   3. Add new route path to [ingress.yml file](./deployment/nginxIngress/ingress.yml)
+      ```
+      - path: /<model folder name>/(.*)
+        pathType: Prefix
+        backend:
+          service:
+             name: <service-name>
+             port:
+                number: 80
+      ```
+   4. When you develop python model, if you are doing model specific resource loading at the startup, please check the `SERVICE_MODEL` env variable to avoid unnecessary resource usage. 
 ## Testing
 
 ### Local Environment Setup
