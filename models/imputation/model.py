@@ -1,7 +1,7 @@
 # Data Manipulation
 import logging
 import os
-
+import math
 import numpy as np
 import pandas as pd
 
@@ -24,11 +24,11 @@ from models.imputation import Schema, Interpolator, Interval, Model
 
 seed = 7
 
-# Indicators measured for less than 90 percent of the years for each country (to be removed) for the time-series version of model
-measure = 90
+#Maximum percentage of missingness to consider in target (target threshold) 
+percent = 80 
 
-# Interpolation for indcators missing less than 30% using KNN imputer
-percent = 30
+#Maximum number of missingess to consider in predictors (predictor threshold)
+measure = 30
 
 supported_years = [str(x) for x in list(range(2000, 2020))]
 Datasets = {}
@@ -55,12 +55,10 @@ def cou_ind_miss(Data):
 
 def data_importer(percent=90, model_type="non-series", path=DATASETS_PATH):
     """
-
         Import csv files and restrructure the data into a country by indcator format. Model_type will be expanded upon.
         precent: the most tolerable amount of missingness in a column for an indicator  accross the years
         model_type: type of model data imported for
         path: path on disk the raw data is stored
-
         wb_data: indicatorData restructed to a (country x year) by Indicator Code format
         indicatorMeta: indicator meta dataset (as is)
         indicatorData: indicator data dataset (as is)
@@ -113,6 +111,7 @@ def data_importer(percent=90, model_type="non-series", path=DATASETS_PATH):
     datasetMeta = datasetMeta[datasetMeta["Dataset Name"].notna()]
 
     return wb_data, indicatorMeta, datasetMeta, indicatorData
+
 
 
 # Preprocess
@@ -383,6 +382,29 @@ def model_trainer(X_train, X_test, y_train, seed, n_estimators, model_type, inte
 
     return prediction, rmse, gs, best_model
 
+def sids_top_ranked(target_year,data,SIDS, percent,indicator_type="target"):
+    """Return a list with indicators with less than "percent" amount of missingness over SIDS COUNTRIES only """
+    sub_data = data[["Country Code","Indicator Code",str(target_year)]]
+    sub_data = sub_data[sub_data["Country Code"].isin(SIDS)]
+    sub_data = sub_data.set_index(["Country Code","Indicator Code"])[str(target_year)].unstack(level=1)
+    rank = missingness(sub_data)
+    if indicator_type == "target":
+        top_ranked = rank[(rank.percent_missing < percent)&(rank.percent_missing > 0)]["column_name"].values
+    else:
+        top_ranked = rank[(rank.percent_missing < percent)]["column_name"].values
+    return top_ranked
+
+def total_top_ranked(target_year,data,SIDS, percent,indicator_type="target"):
+    """Return a list with indicators with less than "percent" amount of missingness over ALL COUNTRIES (SIDS input not used)"""
+    sub_data = data[["Country Code","Indicator Code",str(target_year)]]
+    sub_data = sub_data.set_index(["Country Code","Indicator Code"])[str(target_year)].unstack(level=1)
+    rank = missingness(sub_data)
+    if indicator_type == "target":
+        top_ranked = rank[(rank.percent_missing < percent)&(rank.percent_missing > 0)]["column_name"].values
+    else:
+        top_ranked = rank[(rank.percent_missing < percent)]["column_name"].values
+    return top_ranked
+
 
 # Import data
 wb_data = None
@@ -394,20 +416,16 @@ indicatorData = None
 def load_dataset():
     global wb_data, indicatorMeta, datasetMeta, indicatorData
     if wb_data is None:
-        wb_data, indicatorMeta, datasetMeta, indicatorData = data_importer(model_type="knn")
+        wb_data, indicatorMeta, datasetMeta, indicatorData = data_importer()
 
 
 if os.getenv("MODEL_SERVICE") is None or os.getenv("MODEL_SERVICE") == "imputation":
     load_dataset()
 
 
-def dimension_options(target, target_year):
-    wdi_indicatorData_2010 = indicatorData[["Country Code", "Indicator Code", str(target_year)]]
-    wdi_indicatorData_2010 = wdi_indicatorData_2010.set_index(["Country Code", "Indicator Code"])[
-        str(target_year)].unstack(level=1)
-    rank = missingness(wdi_indicatorData_2010)
-    top_ranked = rank[(rank.percent_missing < 80) & (rank.percent_missing > 0)]["column_name"].values
 
+def dimension_options(target, target_year):
+    top_ranked = total_top_ranked(target_year,indicatorData,SIDS, percent)
     codes = indicatorMeta[indicatorMeta["Indicator"] == target][["Indicator Code", "Dimension"]]
     codes = codes[codes["Indicator Code"].isin(top_ranked)]
     return [{'label': codes.loc[i, "Dimension"], 'value': codes.loc[i, "Indicator Code"]} for i in codes.index]
@@ -421,23 +439,15 @@ def check_dataset_validity(target_year, dataset):
 
 def dataset_options(target_year):
     logging.info("Dataset options:")
-    data = indicatorData
-    ind_meta = indicatorMeta
-    data_meta = datasetMeta
     # top_ranked = indicator_list(target_year,data,SIDS, percent=percent)
     global Datasets
     if target_year not in Datasets:
         logging.info("Dataset does not found in the cache for year %s", target_year)
-        wdi_indicatorData_2010 = data[["Country Code", "Indicator Code", str(target_year)]]
-        # wdi_indicatorData_2010 = wdi_indicatorData_2010[wdi_indicatorData_2010["Country Code"].isin(SIDS)]
-        wdi_indicatorData_2010 = wdi_indicatorData_2010.set_index(["Country Code", "Indicator Code"])[
-            str(target_year)].unstack(level=1)
-        rank = missingness(wdi_indicatorData_2010)
-        top_ranked = rank[(rank.percent_missing < 80) & (rank.percent_missing > 0)]["column_name"].values
-        Datasets[target_year] = np.unique(ind_meta[ind_meta["Indicator Code"].isin(top_ranked)].Dataset.values)
+        top_ranked = total_top_ranked(target_year,indicatorData,SIDS, percent)
+        Datasets[target_year] = np.unique(indicatorMeta[indicatorMeta["Indicator Code"].isin(top_ranked)].Dataset.values)
     data_list = {}
     for i in Datasets[target_year]:
-        names = data_meta[data_meta["Dataset Code"] == i]["Dataset Name"]
+        names = datasetMeta[datasetMeta["Dataset Code"] == i]["Dataset Name"]
         if len(names.values) > 0:
             data_list[i] = names.values[0]
     return data_list
@@ -455,16 +465,7 @@ def check_year_validity(year):
 def load_predictos(target_year: str):
     global Predictor_list
     if target_year not in Predictor_list:
-        # Subset data for target and target_year
-        wdi_indicatorData_2010 = indicatorData[["Country Code", "Indicator Code", str(target_year)]]
-        wdi_indicatorData_2010 = wdi_indicatorData_2010.set_index(["Country Code", "Indicator Code"])[
-            str(target_year)].unstack(level=1)
-
-        # Find how much missing values are there for each indicator
-        rank = missingness(wdi_indicatorData_2010)
-
-        # Only consider indcators with less than 80% missing values
-        top_ranked = rank[rank.percent_missing < 30]["column_name"].values
+        top_ranked = total_top_ranked(target_year,indicatorData,SIDS, measure,indicator_type="predictor")
         Predictor_list[target_year] = top_ranked
 
 
@@ -513,14 +514,8 @@ def load_indicator(target_year: str, dataset: str):
     global Targets_top_ranked
     if key not in Targets_top_ranked:
         logging.info("Indicator list does not found in the cache for key %s", key)
-        ind_list = indicatorMeta[indicatorMeta.Dataset == dataset]["Indicator Code"].values
-        wdi_indicatorData_2010 = indicatorData[["Country Code", "Indicator Code", str(target_year)]]
-        # wdi_indicatorData_2010 = wdi_indicatorData_2010[wdi_indicatorData_2010["Country Code"].isin(SIDS)]
-        wdi_indicatorData_2010 = wdi_indicatorData_2010[wdi_indicatorData_2010["Indicator Code"].isin(ind_list)]
-        wdi_indicatorData_2010 = wdi_indicatorData_2010.set_index(["Country Code", "Indicator Code"])[
-            str(target_year)].unstack(level=1)
-        rank = missingness(wdi_indicatorData_2010)
-        Targets_top_ranked[key] = rank[(rank.percent_missing < 80) & (rank.percent_missing > 0)]["column_name"].values
+        Targets_top_ranked[key] = total_top_ranked(target_year,indicatorData,SIDS, percent)
+
 
 
 
@@ -529,6 +524,14 @@ def get_indicator_list(target_year: str, dataset: str):
     global Targets_top_ranked
     load_indicator(target_year, dataset)
     return (indicatorMeta[indicatorMeta["Indicator Code"].isin(Targets_top_ranked[key])].groupby("Indicator Code").nth(0))["Indicator"].to_dict()
+
+
+def target_sample_size_requirement():
+    return math.ceil(indicatorData["Country Code"].unique().shape[0]* (1-percent/100))
+
+def predictor_sample_size_requirement():
+    return math.ceil(indicatorData["Country Code"].unique().shape[0]* (1-measure/100))
+
 
 
 def query_and_train(manual_predictors, target_year, target, interpolator, scheme, estimators, model, interval,
