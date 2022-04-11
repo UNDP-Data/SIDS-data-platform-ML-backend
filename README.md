@@ -383,6 +383,6 @@ Time-consuming request
 https://sidsapi-basic.azurewebsites.net/docs#/
 
 #### Kubernetes - AKS
-http://20.88.191.216/docs#/
+https://ml-aks-ingress.eastus.cloudapp.azure.com/docs
 
 Kubernetes endpoint is faster than consumer plan endpoint.
