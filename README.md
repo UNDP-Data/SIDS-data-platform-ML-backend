@@ -296,6 +296,51 @@ CI/CD implemented using Github Actions. [config file](./.github/workflows/main.y
    4. When you develop python model, if you are doing model specific resource loading at the startup, please check the `SERVICE_MODEL` env variable to avoid unnecessary resource usage. 
 ## Testing
 
+### Load Testing
+#### Cluster Configuration
+Tested using Jmeter tool.
+
+*Node Configuration*
+
+|Size|vCPU|Memory: GiB|Expected network bandwidth (Mbps)|
+| :---: | :---: |:---: |:---: |
+|Azure Standard_DS2_v2|2|7|1500
+
+- Minimum Node Count : 1
+- Maximum Node Count : 5
+
+
+*Pod Configuration*
+   - Pod Resource Limit
+      - CPU: 1
+      - Memory: 2 GiB
+   
+   - Pod Resource Request
+      - CPU: 0.5
+      - Memory: 1 GiB
+
+
+- Minimum Pod Replicas : 1
+- Maximum Pod Replicas : 6
+
+#### Test Scenario
+Sent `Simple Request` mentioned below from 20 users within 1 minute, and repeat it for 20 times.
+
+#### Results
+1. Cluster started with single node, single pod.
+2. Within first 40 seconds expected pod count increased to 4 and node count increased to 3.
+3. All extra pods and nodes started within next 1 minute. 
+4. Within this period received set of Gateway-Timeout responses. 
+5. In next 1 minute expected pod count increased to 6, node count increased to 4.
+6. All pods up and running and responses got stable. 
+7. Result as below
+
+| Request Count | Error Rate | Throughput |
+   | :---: | :---: | :---: |
+|400|30%|34.6 /min|
+
+<img src="./docs/images/ResponseTimeGraph.png?raw=true" height="700px">
+
 ### Local Environment Setup
 1. Install Azure core tools - [link](https://github.com/Azure/azure-functions-core-tools).
 2. Copy dataset files to the dataset folder in the root directory.
