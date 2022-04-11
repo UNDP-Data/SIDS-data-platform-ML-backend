@@ -1,11 +1,12 @@
 env:
   REGISTRY_NAME: acrmlbackend
-  CLUSTER_NAME: sidmlbackendCluster
-  CLUSTER_RESOURCE_GROUP: ml-rg-undp
-  NAMESPACE: default
+  CLUSTER_NAME: sidMLBackendCluster
+  CLUSTER_RESOURCE_GROUP: ml-backend-group
+  NAMESPACE: ml-app
   APP_NAME: sidmlbackend
-  STROAGE_ACCOUNT: samlbackend
+  STROAGE_ACCOUNT: mlbackendstorage
   IMAGE_NAME: acrmlbackend.azurecr.io/sidmlbackend
+
 
 on:
   push:

@@ -37,7 +37,7 @@ Current Kubernetes deployment automatically scales up and down using two ways,
    - Maximum Replicas: 5
    - Target scale CPU utilization percentage: 50
     
-    These values can update from [k8_keda.yml](./deployment/k8_keda.yml) file
+    These values can update from [k8_keda.yml](deployment/nginxIngress/k8_keda.yml) file
 
 
    ![Scaling Options](./docs/images/cluster-autoscaler.png?raw=true "Title")
@@ -92,20 +92,131 @@ Source code repository structured in the following way
 ## Deployment
 
 ### Setup Azure Kubernetes Cluster
-1. Install Azure core tools - [link](https://github.com/Azure/azure-functions-core-tools).
-2. Install Azure CLI - [link](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
-3. Install docker
-4. Update variables in [setup.sh](./deployment/setup.sh) based on the requirement.
-5. Run ```./deployment/setup.sh``` script file from the project root directory.
-6. At the end, it will print three variables that we need for Github Action CI/CD. Save them in a safe place. Do not share!
-7. Above command will create all the resources required for the cluster and create a Kubernetes configuration file in the deployment 
-folder as k8_keda.yml. Update the file based on the requirement.
-8. Run ```kubectl apply -f ./deplyment/k8_keda.yml``` to create Kubernetes services and deployments in the cluster.
-9. Cluster will be ready in a few minutes. Can access the cluster from Azure Console Kubernetes Services -> Services and Ingress -> External IP
-10. View swagger documentation from http://<cluster ip>/docs
+
+#### Prerequisites
+1. Azure core tools - [link](https://github.com/Azure/azure-functions-core-tools).
+2. Azure CLI - [link](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
+3. Docker
+4. Helm - [link](https://helm.sh/docs/intro/install/)
+   
+#### Azure Application Gateway Approach
+1. Update `subscriptionId` with your Azure subscription in [AGIC_setup.sh](./deployment/azureAG/AGIC_setup.sh) file. You can update other variables as well. If you update these variables need to update [autoscaler.yml](./deployment/azureAG/autoscaler.yml) and  [ingress.yml](./deployment/azureAG/ingress.yml) as well with the same values
+2. Run ```./deployment/azureAG/AGIC_setup.sh``` script file from the project root directory.
+3. At the end, it will print three variables that we need for Github Action CI/CD. Save them in a safe place. Do not share!
+4. Upload dataset files in to Azure Storage -> aksshare file share -> dataset directory and disable soft delete in file share. 
+5. Above command will create all the resources required for the cluster and create a Kubernetes configuration file in the deployment/azureAG 
+folder as k8_keda_main.yml. Please do follow updates as your requirement. 
+   - Change Service type from LoadBalancer to ClusterIP
+   - Add below code in to http deployment, below image tag.
+    ```
+   resources:
+          limits:
+            cpu: 2000m
+            memory: 2048Mi
+          requests:
+            cpu: 100m
+            memory: 512Mi
+        volumeMounts:
+          - name: azure
+            mountPath: /mnt/azure
+   ```
+   - Add below code below serviceAccountName
+    ```
+   volumes:
+        - name: azure
+          csi:
+            driver: file.csi.azure.com
+            volumeAttributes:
+              secretName: azure-secret
+              shareName: aksshare
+              mountOptions: "dir_mode=0777,file_mode=0777,cache=strict,actimeo=30"
+   ```
+   - Add following env variable to the deployment
+    ```
+   - name: MODEL_SERVICE
+     value: imputation
+   ```
+   - Add following code to the top of the file to create namespace
+    ```
+    kind: Namespace
+    apiVersion: v1
+    metadata:
+      name: ml-app
+      labels:
+        name: ml-ap
+    ---
+   ```
+8. Create SSL certificates
+9. Execute following command to update the cluster for SSL
+   ```
+    az network application-gateway ssl-cert create \
+   --resource-group $(az aks show --name $aksName --resource-group $resourceGroup --query nodeResourceGroup | tr -d '"') \
+   --gateway-name $aksAppGateway\
+   --name httpCert \
+   --cert-file ./deployment/azureAG/certificate.pfx \
+   --cert-password <certficate password>
+   ```
+8. Run ```kubectl apply -f ./deployment/azureAG/k8_keda_main.yml``` to create Kubernetes services and deployments in the cluster.
+9. Run ```kubectl apply -f ./deployment/azureAG/autoscaler.yml``` to create horizontal pod scaler. 
+10. Run ```kubectl apply -f ./deployment/azureAG/ingress.yml``` to create ingress controller
+11. Cluster will be ready in a few minutes. Can get the application gateway public ip from Azure Console Kubernetes Services -> Services and Ingress -> Ingress -> Address
+12. View swagger documentation from http://<public ip>/docs
+
+#### NGINX Ingress Controller Approach
+1. Update `subscriptionId` with your Azure subscription in [AGIC_setup.sh](./deployment/azureAG/AGIC_setup.sh) file. You can update other variables as well. If you update these variables need to update [autoscaler.yml](./deployment/azureAG/autoscaler.yml) and  [ingress.yml](./deployment/azureAG/ingress.yml) as well with the same values
+2. Run ```./deployment/nginxIngress/setup.sh``` script file from the project root directory.
+3. At the end, it will print three variables that we need for Github Action CI/CD. Save them in a safe place. Do not share!
+4. Upload dataset files in to Azure Storage -> aksshare file share -> dataset directory and disable soft delete in file share. 
+   
+5. Above command will create all the resources required for the cluster and create a Kubernetes configuration file in the deployment/azureAG 
+folder as k8_keda_main.yml. Please do follow updates as your requirement. 
+   - Change Service type from LoadBalancer to ClusterIP
+   - Add below code in to http deployment, below image tag.
+    ```
+   resources:
+          limits:
+            cpu: 2000m
+            memory: 2048Mi
+          requests:
+            cpu: 100m
+            memory: 512Mi
+        volumeMounts:
+          - name: azure
+            mountPath: /mnt/azure
+   ```
+   - Add below code below serviceAccountName
+    ```
+   volumes:
+        - name: azure
+          csi:
+            driver: file.csi.azure.com
+            volumeAttributes:
+              secretName: azure-secret
+              shareName: aksshare
+              mountOptions: "dir_mode=0777,file_mode=0777,cache=strict,actimeo=30"
+   ```
+   - Add following env variable to the deployment
+    ```
+   - name: MODEL_SERVICE
+     value: imputation
+   ```
+8. Run `./deployment/nginxIngress/setup_nginx.sh` to install Nginx Ingress controller
+9. If you don't have a custom domain create fqdn domain by executing `./deployment/nginxIngress/fqdn_domain.sh`
+10. Create SSL certificates for your domain
+9. Execute following command to create Kubernetes secret for tls certificates
+   ```
+   kubectl create secret tls aks-ingress-tls \
+    --namespace ml-app \
+    --key ./deployment/nginxIngress/aks-ingress-tls.key \
+    --cert ./deployment/nginxIngress/aks-ingress-tls.crt
+   ```
+8. Run ```kubectl apply -f ./deployment/nginxIngress/k8_keda_main.yml``` to create Kubernetes services and deployments in the cluster.
+9. Run ```kubectl apply -f ./deployment/nginxIngress/autoscaler.yml``` to create horizontal pod scaler. 
+10. Update the host name and run ```kubectl apply -f ./deployment/nginxIngress/ingress.yml``` to create ingress controller
+11. Cluster will be ready in a few minutes. View swagger documentation from http://<domain>/docs
 
 ### CI/CD
-CI/CD implemented using Github Actions.[config file](./.github/workflows/main.yml). It performs the following actions
+CI/CD implemented using Github Actions. [config file](./.github/workflows/main.yml). It performs the following actions
 - Build a docker container and push it to the Azure Container Registry (ACR)
 - Perform rollout pod restart in Kubernetes cluster.
 
@@ -162,7 +273,27 @@ CI/CD implemented using Github Actions.[config file](./.github/workflows/main.ym
 
 
 3. Use `DATASET_PATH` environment variable for dataset loading. 
+4. By default, newly added endpoint will route through default Kubernetes service.
 
+#### Add Model Endpoint as a New Kubernetes Service
+1. It is better to serve as a different service on following reasons
+   - Different datasets. 
+   - Different resource usage.
+2. It will enable independent resource configurability and scalability.
+3. Deployment steps as follows,
+   1. Update \<service name\> and \<model folder name\> on [kubernetes service & deployment file](./deployment/service-deployment-template.yml).
+   2. Create new service by running `kubectl apply -f ./deployment/service-deployment-template.yml`
+   3. Add new route path to [ingress.yml file](./deployment/nginxIngress/ingress.yml) and apply it by `kubectl apply -f ./deployment/nginxIngress/ingress.yml`
+      ```
+      - path: /<model folder name>/(.*)
+        pathType: Prefix
+        backend:
+          service:
+             name: <service-name>
+             port:
+                number: 80
+      ```
+   4. When you develop python model, if you are doing model specific resource loading at the startup, please check the `SERVICE_MODEL` env variable to avoid unnecessary resource usage. 
 ## Testing
 
 ### Local Environment Setup
