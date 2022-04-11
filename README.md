@@ -339,7 +339,7 @@ Sent `Simple Request` mentioned below from 20 users within 1 minute, and repeat 
    | :---: | :---: | :---: |
 |400|30%|34.6 /min|
 
-<img src="./docs/images/ResponseTimeGraph.png?raw=true" height="700px">
+<img src="./docs/images/ResponseTimeGraph.png?raw=true" height="400px">
 
 ### Local Environment Setup
 1. Install Azure core tools - [link](https://github.com/Azure/azure-functions-core-tools).
