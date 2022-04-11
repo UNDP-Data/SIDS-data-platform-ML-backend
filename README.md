@@ -341,6 +341,8 @@ Sent `Simple Request` mentioned below from 20 users within 1 minute, and repeat 
 
 <img src="./docs/images/ResponseTimeGraph.png?raw=true" height="400px">
 
+8. 10 minutes after the test, pods and node count dropped to 1.
+
 ### Local Environment Setup
 1. Install Azure core tools - [link](https://github.com/Azure/azure-functions-core-tools).
 2. Copy dataset files to the dataset folder in the root directory.
@@ -381,6 +383,6 @@ Time-consuming request
 https://sidsapi-basic.azurewebsites.net/docs#/
 
 #### Kubernetes - AKS
-http://20.88.191.216/docs#/
+https://ml-aks-ingress.eastus.cloudapp.azure.com/docs
 
 Kubernetes endpoint is faster than consumer plan endpoint.
