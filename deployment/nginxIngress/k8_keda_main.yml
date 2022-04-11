@@ -93,10 +93,10 @@ spec:
         image: acrmlbackend.azurecr.io/sidmlbackend:latest
         resources:
           limits:
-            cpu: 1000m
+            cpu: 800m
             memory: 2048Mi
           requests:
-            cpu: 500m
+            cpu: 300m
             memory: 1024Mi
         volumeMounts:
           - name: azure
