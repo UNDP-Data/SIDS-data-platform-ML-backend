@@ -42,7 +42,7 @@ def cou_ind_miss(Data):
     absolute_missing = Data.drop(columns=["Country Code", "Indicator Code"]).isnull().sum(axis=1)
     total = Data.drop(columns=["Country Code", "Indicator Code"]).count(axis=1)
 
-    percent_missing = absolute_missing * 100 / Data.drop(columns=["Country Code", "Indicator Code"]).shape[1]
+    percent_missing = absolute_missing * 100 / total
     missing_value_df = pd.DataFrame({'row_name': Data["Country Code"] + "-" + Data["Indicator Code"],
                                      'Indicator Code': Data["Indicator Code"],
                                      'absolute_missing': absolute_missing,
@@ -99,10 +99,6 @@ def data_importer(percent=90, model_type="non-series", path=DATASETS_PATH):
 
         indicatorData = indicatorData[~indicatorData["Indicator Code"].isin(indicator_subset)]
 
-    wb_data = indicatorData.set_index(['Country Code', 'Indicator Code'])
-    wb_data = wb_data.stack()
-    wb_data = wb_data.unstack(['Indicator Code'])
-    wb_data = wb_data.sort_index()
 
     indicatorMeta = indicatorMeta[indicatorMeta["Indicator Code"].isin(indicatorData["Indicator Code"].values)]
     indicatorMeta = indicatorMeta[indicatorMeta.Indicator.notna()]
@@ -110,7 +106,7 @@ def data_importer(percent=90, model_type="non-series", path=DATASETS_PATH):
     datasetMeta = datasetMeta[datasetMeta["Dataset Code"].isin(indicatorMeta["Dataset"].values)]
     datasetMeta = datasetMeta[datasetMeta["Dataset Name"].notna()]
 
-    return wb_data, indicatorMeta, datasetMeta, indicatorData
+    return indicatorMeta, datasetMeta, indicatorData
 
 
 
@@ -407,16 +403,15 @@ def total_top_ranked(target_year,data,SIDS, percent,indicator_type="target"):
 
 
 # Import data
-wb_data = None
 indicatorMeta = None
 datasetMeta = None
 indicatorData = None
 
 
 def load_dataset():
-    global wb_data, indicatorMeta, datasetMeta, indicatorData
-    if wb_data is None:
-        wb_data, indicatorMeta, datasetMeta, indicatorData = data_importer()
+    global indicatorMeta, datasetMeta, indicatorData
+    if indicatorData is None:
+        indicatorMeta, datasetMeta, indicatorData = data_importer()
 
 
 if os.getenv("MODEL_SERVICE") is None or os.getenv("MODEL_SERVICE") == "imputation":
