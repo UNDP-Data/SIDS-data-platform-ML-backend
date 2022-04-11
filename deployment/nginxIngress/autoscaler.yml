@@ -9,6 +9,6 @@ spec:
     kind: Deployment
     name: sidmlbackend-http
   minReplicas: 1
-  maxReplicas: 5
+  maxReplicas: 6
   targetCPUUtilizationPercentage: 50
 ---

@@ -8,7 +8,7 @@ fullAcrName=$acrName.azurecr.io
 imageName=$fullAcrName/$functionAppName:latest
 aksName=sidMLBackendCluster
 aksShareName=aksshare
-subscriptionId=006c8a06-bc98-4f2e-a166-b56f87c77268
+subscriptionId=<subscription Id>
 aksAppGateway=mlbackendAG
 namespace=ml-app
 
