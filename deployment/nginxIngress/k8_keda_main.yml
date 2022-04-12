@@ -100,7 +100,7 @@ spec:
             memory: 1024Mi
         volumeMounts:
           - name: azure
-            mountPath: /mnt/azure
+            mountPath: /mnt/azure/dataset
         ports:
         - containerPort: 80
         env:
@@ -137,10 +137,10 @@ spec:
       volumes:
         - name: azure
           csi:
-            driver: file.csi.azure.com
+            driver: blob.csi.azure.com
             volumeAttributes:
               secretName: azure-secret
-              shareName: aksshare
-              mountOptions: "dir_mode=0777,file_mode=0777,cache=strict,actimeo=30"
+              containerName: datasets
+              mountOptions: "-o allow_other --file-cache-timeout-in-seconds=120"
 ---
 
