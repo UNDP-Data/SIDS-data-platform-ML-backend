@@ -111,11 +111,11 @@ folder as k8_keda_main.yml. Please do follow updates as your requirement.
     ```
    resources:
           limits:
-            cpu: 2000m
+            cpu: 800m
             memory: 2048Mi
           requests:
-            cpu: 100m
-            memory: 512Mi
+            cpu: 300m
+            memory: 1024Mi
         volumeMounts:
           - name: azure
             mountPath: /mnt/azure
@@ -175,11 +175,11 @@ folder as k8_keda_main.yml. Please do follow updates as your requirement.
     ```
    resources:
           limits:
-            cpu: 2000m
+            cpu: 800m
             memory: 2048Mi
           requests:
-            cpu: 100m
-            memory: 512Mi
+            cpu: 300m
+            memory: 1024Mi
         volumeMounts:
           - name: azure
             mountPath: /mnt/azure
