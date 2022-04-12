@@ -27,6 +27,13 @@ spec:
              name: sidmlbackend-http
              port:
                 number: 80
+      - path: /clustering/(.*)
+        pathType: Prefix
+        backend:
+          service:
+             name: sids-survey-backend
+             port:
+                number: 80
       - path: /(.*)
         pathType: Prefix
         backend:

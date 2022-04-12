@@ -9,3 +9,5 @@ pandas
 pca
 python-multipart
 requests
+kmodes
+scipy
