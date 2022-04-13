@@ -28,13 +28,6 @@ spec:
               number: 80
         path: /(.*)
         pathType: Prefix
-      - backend:
-          service:
-            name: sampleapi-service
-            port:
-              number: 80
-        path: /sampleapi/(.*)
-        pathType: Prefix
   tls:
   - hosts:
     - ml-aks-ingress.eastus.cloudapp.azure.com

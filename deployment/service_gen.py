@@ -23,7 +23,7 @@ name = get_inputs("Please enter service name. (supported only [a-z, A-Z, -])")
 model_folder = get_inputs("Model folder name?")
 isSharedVolume = get_inputs("Do you need Azure Storage shared volume?", ["y", "n"])
 if isSharedVolume == "y":
-    share_vol_type = get_inputs("Do you need Azure Storage shared volume?", ["file", "blob"])
+    share_vol_type = get_inputs("Type of Azure Storage shared volume?", ["file", "blob"])
     share_volume_name = get_inputs("Share volume name (share name / blob container name)?")
 
 req_memory = get_inputs("Requested memory: [default 256Mi]", None, "256Mi")
