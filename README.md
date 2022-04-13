@@ -284,15 +284,15 @@ CI/CD implemented using Github Actions. [config file](./.github/workflows/main.y
    1. Execute command `python deployment/service_gen.py`. Script will request following information. 
       - **Service name** : This will be the Kubernetes service name. Avoid duplicate service names.
       - **Model folder name** : This will be the folder name that added to the `models` python module.
-      - **Shared Volume** : If you need to have a storage that contains sharable resources across all the pods (datasets). Selected `y` else 'n'
-      - **Type of Shared volume** :
+      - **Shared Volume** : If you need to have a storage that contains sharable resources across all the pods (ex: datasets). Selected `y` else `n`
+      - **Type of shared volume** :
          - file - Azure Storage file share
          - blob - Azure Storage blob storage
       - **Name of the shared volume**
          - file - File share name
          - blob - Container name
-      - **Requested memory** : This amount of memory allocated at the pod startup. [Memory units](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory)
-      - **Requested cpu** : This amount of cpu allocated at the pod startup. [CPU units](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes)
+      - **Requested memory** : Amount of memory allocated at the pod startup. [Memory units](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory)
+      - **Requested cpu** : Amount of cpu allocated at the pod startup. [CPU units](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes)
       - **Memory limit** : Maximum amount of memory allocated for the pod. [Memory units](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory)
       - **CPU limit** : Maximum amount of cpu allocated for the pod. [CPU units](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes)
       
