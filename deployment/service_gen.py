@@ -155,7 +155,7 @@ service_template["spec"]["selector"]["app"] = name
 
 deployment_template["metadata"]["name"] = name
 deployment_template["metadata"]["labels"]["app"] = name
-deployment_template["spec"]["selector"]["app"] = name
+deployment_template["spec"]["selector"]["matchLabels"]["app"] = name
 deployment_template["spec"]["template"]["metadata"]["labels"]["app"] = name
 deployment_template["spec"]["template"]["spec"]["containers"][0]["name"] = name
 deployment_template["spec"]["template"]["spec"]["containers"][0]["resources"]["limits"]["cpu"] = limit_cpu
