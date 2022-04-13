@@ -283,7 +283,7 @@ CI/CD implemented using Github Actions. [config file](./.github/workflows/main.y
 3. Deployment steps as follows,
    1. Update \<service name\> and \<model folder name\> on [kubernetes service & deployment file](./deployment/service-deployment-template.yml).
    2. Create new service by running `kubectl apply -f ./deployment/service-deployment-template.yml`
-   3. Add new route path to [ingress.yml file](./deployment/nginxIngress/ingress.yml) and apply it by `kubectl apply -f ./deployment/nginxIngress/ingress.yml`
+   3. Add new route path to [ingress.yml file](deployment/nginxIngress/manifests/ingress.yml) and apply it by `kubectl apply -f ./deployment/nginxIngress/ingress.yml`
       ```
       - path: /<model folder name>/(.*)
         pathType: Prefix

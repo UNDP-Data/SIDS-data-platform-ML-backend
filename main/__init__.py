@@ -35,7 +35,7 @@ for subdir, dirs, files in os.walk("./models/"):
 
 @app.get("/")
 async def root():
-    return {"message": "Hello SIDS ML Backend V6!"}
+    return {"message": "Hello SIDS ML Backend V10!"}
 
 
 @app.get("/datasets")
