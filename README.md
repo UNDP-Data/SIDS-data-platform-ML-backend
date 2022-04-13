@@ -281,19 +281,24 @@ CI/CD implemented using Github Actions. [config file](./.github/workflows/main.y
    - Different resource usage.
 2. It will enable independent resource configurability and scalability.
 3. Deployment steps as follows,
-   1. Update \<service name\> and \<model folder name\> on [kubernetes service & deployment file](./deployment/service-deployment-template.yml).
-   2. Create new service by running `kubectl apply -f ./deployment/service-deployment-template.yml`
-   3. Add new route path to [ingress.yml file](deployment/nginxIngress/manifests/ingress.yml) and apply it by `kubectl apply -f ./deployment/nginxIngress/ingress.yml`
-      ```
-      - path: /<model folder name>/(.*)
-        pathType: Prefix
-        backend:
-          service:
-             name: <service-name>
-             port:
-                number: 80
-      ```
-   4. When you develop python model, if you are doing model specific resource loading at the startup, please check the `SERVICE_MODEL` env variable to avoid unnecessary resource usage. 
+   1. Execute command `python deployment/service_gen.py`. Script will request following information. 
+      - **Service name** : This will be the Kubernetes service name. Avoid duplicate service names.
+      - **Model folder name** : This will be the folder name that added to the `models` python module.
+      - **Shared Volume** : If you need to have a storage that contains sharable resources across all the pods (datasets). Selected `y` else 'n'
+      - **Type of Shared volume** :
+         - file - Azure Storage file share
+         - blob - Azure Storage blob storage
+      - **Name of the shared volume**
+         - file - File share name
+         - blob - Container name
+      - **Requested memory** : This amount of memory allocated at the pod startup. [Memory units](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory)
+      - **Requested cpu** : This amount of cpu allocated at the pod startup. [CPU units](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes)
+      - **Memory limit** : Maximum amount of memory allocated for the pod. [Memory units](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory)
+      - **CPU limit** : Maximum amount of cpu allocated for the pod. [CPU units](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes)
+      
+   2. When you develop python model, if you are doing model specific resource loading at the startup, please check the `SERVICE_MODEL` env variable to avoid unnecessary resource usage.
+   3. Once you commit these new changes, Cluster will be automatically update via CI/CD.
+
 ## Testing
 
 ### Load Testing
