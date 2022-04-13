@@ -1,0 +1,41 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: '0'
+    nginx.ingress.kubernetes.io/proxy-read-timeout: '600'
+    nginx.ingress.kubernetes.io/proxy-send-timeout: '600'
+    nginx.ingress.kubernetes.io/use-regex: 'true'
+  name: sidmlbackend-ingress
+  namespace: ml-app
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: ml-aks-ingress.eastus.cloudapp.azure.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: sidmlbackend-http
+            port:
+              number: 80
+        path: /imputation/(.*)
+        pathType: Prefix
+      - backend:
+          service:
+            name: sidmlbackend-http
+            port:
+              number: 80
+        path: /(.*)
+        pathType: Prefix
+      - backend:
+          service:
+            name: sampleapi-service
+            port:
+              number: 80
+        path: /sampleapi/(.*)
+        pathType: Prefix
+  tls:
+  - hosts:
+    - ml-aks-ingress.eastus.cloudapp.azure.com
+    secretName: aks-ingress-tls

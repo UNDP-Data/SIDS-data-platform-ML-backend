@@ -7,3 +7,10 @@
 datasets/*.csv
 datasets/*.json
 .python_packages
+**/*/*.crt
+**/*/*.key
+**/*/*.pem
+**/*/*.pfx
+**/*/*.csr
+*.log
+*.jtl

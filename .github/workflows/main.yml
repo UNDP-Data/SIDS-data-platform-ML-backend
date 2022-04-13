@@ -44,9 +44,15 @@ jobs:
         cluster-name: ${{ env.CLUSTER_NAME }}
         resource-group: ${{ env.CLUSTER_RESOURCE_GROUP }}
 
-    - name: Rollout pod restart
-      run: kubectl rollout restart deployment ${{ env.APP_NAME }}-http --namespace=${{ env.NAMESPACE }}
-    
+    - name: Update new service changes
+      run: kubectl apply -f deployment/nginxIngress/manifests
+
+    - name: Update new service changes
+      run: kubectl apply -f deployment/nginxIngress/autogen_manifests
+
+#    - name: Rollout pod restart
+#      run: kubectl rollout restart deployment --namespace=${{ env.NAMESPACE }}
+
     # # Deploy app to AKS
     # - uses: azure/k8s-deploy@v1
     #   with:

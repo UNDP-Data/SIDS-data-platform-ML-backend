@@ -66,7 +66,7 @@ az acr login -n $acrName
 docker push $imageName
 
 echo "Generating kubernetes manifest file"
-func kubernetes deploy --name $functionAppName --registry $fullAcrName  --namespace $namespace --dry-run > ./deployment/nginxIngress/k8_keda_main.yml
+func kubernetes deploy --name $functionAppName --registry $fullAcrName  --namespace $namespace --dry-run > ./deployment/nginxIngress/manifests/k8_keda_main.yml
 
 echo "Use following values for CI/CD. You must protect following credentials."
 echo "REGISTRY_USERNAME"
