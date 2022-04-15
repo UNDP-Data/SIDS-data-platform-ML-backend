@@ -38,11 +38,11 @@ def get_schema_inputs(route, enum_map, route_map):
                     rout = route_map[val["req_endpoint"]]
                     par["req_endpoint"]["inputs"] = get_schema_inputs(rout, enum_map, route_map)
 
-            if key in schema["required"]:
+            if "required" in schema and key in schema["required"]:
                 par["conditions"] = [
                     {"required": True}
                 ]
-            else:
+            elif "required_if" in val:
                 par["conditions"] = [
                     {"required": val["required_if"]}
                 ]

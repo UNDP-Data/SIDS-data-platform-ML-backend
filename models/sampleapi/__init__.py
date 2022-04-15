@@ -1,14 +1,17 @@
 from typing import Optional
+
 from fastapi import APIRouter
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from common.base_definition import BaseDefinition
 
 
-class SampleRequest(BaseModel):
-    requiredField: str = Field(None, title="This field is required", example="required 123")
+class SampleRequest(BaseDefinition):
+    requiredField: str = Field(..., title="This field is required", example="required 123")
     optionalField: Optional[str] = Field(None, title="This field is optional", example="optional 123")
 
 
-class SampleResponse(BaseModel):
+class SampleResponse(BaseDefinition):
     resp1: str
 
 
@@ -19,7 +22,7 @@ router = APIRouter(
 )
 
 
-@router.post('/test_endpoint1', response_model=SampleResponse)
+@router.post('/predict', response_model=SampleResponse)
 async def test_endpoint1(req: SampleRequest):
     return SampleResponse(resp1="Test 1")
 

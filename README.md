@@ -221,8 +221,8 @@ CI/CD implemented using Github Actions. [config file](./.github/workflows/main.y
 - Perform rollout pod restart in Kubernetes cluster.
 
 ### Steps to Add New Model API
-1. Create new python module inside models similar to `imputation`
-2. Create a `__init__.py` file inside newly created module and define all the fast api endpoints. 
+1. Create new python module inside models similar to `sampleapi`
+2. Create a `__init__.py` file inside newly created module and define all the fast api endpoints. `tags` should be the description for the model.
    Example
     ```
     from typing import Optional
@@ -231,7 +231,7 @@ CI/CD implemented using Github Actions. [config file](./.github/workflows/main.y
     
     
     class SampleRequest(BaseModel):
-        requiredField: str = Field(None, title="This field is required", example="required 123")
+        requiredField: str = Field(..., title="This field is required", example="required 123")
         optionalField: Optional[str] = Field(None, title="This field is optional", example="optional 123")
     
     
@@ -256,10 +256,19 @@ CI/CD implemented using Github Actions. [config file](./.github/workflows/main.y
         return "Hi "+name
 
    ```
-    This endpoint will automatically add in to the swagger documentation as a new session. 
+    This endpoint will automatically add in to the swagger documentation as a new session.<br><br>
 
-    **IMPORTANT: `router` object name must be same in every model. All other functions and variables can rename and rearrange the way you want**
+    **IMPORTANT: Every model must have APIRouter object named as `router` and endpoint named `/predict`.**
 
+    Reasons for the above compulsory changes:
+    - `router` object used for the FastAPI app routing. 
+      If you don't have a variable like this, your model will not visible on the swagger api and REST API endpoints 
+      will not available. All other functions and variables can rename and rearrange the way you want. 
+    - Currently, `/params` root endpoint returns the all models predict request definitions. System consider `/predict` 
+      endpoint as the main train and predict endpoint. If you don't add this endpoint, your model will not consider in `/params` request. 
+
+    
+3. Message definitions should be derived from `BaseDefinition`. It will  add `required_if` basic validation support to the definition.
     For readability message definitions can move in to a separate file. 
 
     Add custom validators for message fields at the API level as below. 
@@ -272,8 +281,8 @@ CI/CD implemented using Github Actions. [config file](./.github/workflows/main.y
     please refer [pydantic validators](https://pydantic-docs.helpmanual.io/usage/validators/) for more information.
 
 
-3. Use `DATASET_PATH` environment variable for dataset loading. 
-4. By default, newly added endpoint will route through default Kubernetes service.
+4. Use `DATASET_PATH` environment variable for dataset loading. 
+5. By default, newly added endpoint will route through default Kubernetes service.
 
 #### Add Model Endpoint as a New Kubernetes Service
 1. It is better to serve as a different service on following reasons
