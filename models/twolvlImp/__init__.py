@@ -16,21 +16,14 @@ router = APIRouter(
 )
 
 
-# model_definition = ModelDefinition(
-#     label="Two Level Imputation",
-#     router=router,
-#     input_def=TrainRequest
-# )
-
-
-@router.get('/params')
-async def get_params():
-    return {
-        "Schema": Schema.__members__.items(),
-        "Model": Model.__members__.items(),
-        "Interpolator": Interpolator.__members__.items(),
-        "Interval": Interval.__members__.items(),
-    }
+# @router.get('/params')
+# async def get_params():
+#     return {
+#         "Schema": Schema.__members__.items(),
+#         "Model": Model.__members__.items(),
+#         "Interpolator": Interpolator.__members__.items(),
+#         "Interval": Interval.__members__.items(),
+#     }
 
 
 @router.get('/target_sample_size')
