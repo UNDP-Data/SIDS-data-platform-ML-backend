@@ -2,18 +2,25 @@ from fastapi import APIRouter, HTTPException
 from fastapi.params import Depends
 
 from common.errors import Error
-from models.imputation.enums import Schema, Model, Interval, Interpolator
-from models.imputation.definitions import TrainRequest, ModelResponse, PredictorListRequest
+from models.twolvlImp.enums import Schema, Model, Interval, Interpolator
+from models.twolvlImp.definitions import TrainRequest, ModelResponse, PredictorListRequest
 from common.logger import logger
-from models.imputation.model import query_and_train, get_indicator_list, get_predictor_list, get_target_years, \
+from models.twolvlImp.model import query_and_train, get_indicator_list, get_predictor_list, get_target_years, \
     dataset_options, dimension_options, check_year_validity, check_dataset_validity, check_target_validity, check_predictors_validity, \
     target_sample_size_requirement, predictor_sample_size_requirement
-        
+
 router = APIRouter(
-    prefix="/imputation",
-    tags=["Imputation"],
+    prefix="/twolvlImp",
+    tags=["Two Level Imputation"],
     responses={404: {"description": "Not found"}},
 )
+
+
+# model_definition = ModelDefinition(
+#     label="Two Level Imputation",
+#     router=router,
+#     input_def=TrainRequest
+# )
 
 
 @router.get('/params')
@@ -29,6 +36,7 @@ async def get_params():
 @router.get('/target_sample_size')
 async def get_target_sample_size():
     return target_sample_size_requirement()
+
 
 @router.get('/predictor_sample_size')
 async def get_predictor_sample_size():
@@ -97,3 +105,4 @@ async def train_validate_predict(req: TrainRequest):
                         req.interval, None)
     logger.info("Return values %f %f", rmse, avg_rmse)
     return ModelResponse(rmse_deviation=avg_rmse, rmse=rmse, model_feature_importance=model_feature_importance, model_feature_names=model_feature_names, prediction=prediction,correlation=correlation,feature_importance_pie=feature_importance_pie)
+
