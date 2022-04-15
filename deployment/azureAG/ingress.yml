@@ -18,7 +18,7 @@ spec:
             name: sidmlbackend-http
             port:
               number: 80
-      - path: /imputation
+      - path: /twolvlImp
         pathType: Prefix
         backend:
           service:

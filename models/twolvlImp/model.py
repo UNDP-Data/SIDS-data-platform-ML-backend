@@ -20,7 +20,7 @@ from sklearn.preprocessing import MinMaxScaler
 from common.constants import SIDS, DATASETS_PATH
 from common.errors import Error
 from common.logger import logger
-from models.imputation import Schema, Interpolator, Interval, Model
+from models.twolvlImp import Schema, Interpolator, Interval, Model
 
 seed = 7
 
@@ -123,7 +123,7 @@ def missingness(df):
 
 def preprocessing(data, target, target_year, interpolator, SIDS, percent=30):
     """
-    Preprocess data into a format suitable for the two step imputation model by filling the most complete
+    Preprocess data into a format suitable for the two step twolvlImp model by filling the most complete
     Args:
         data: indicatorData dataset
         target: indicator whose values will be imputed
@@ -414,7 +414,7 @@ def load_dataset():
         indicatorMeta, datasetMeta, indicatorData = data_importer()
 
 
-if os.getenv("MODEL_SERVICE") is None or os.getenv("MODEL_SERVICE") == "imputation":
+if os.getenv("MODEL_SERVICE") is None or os.getenv("MODEL_SERVICE") == "twolvlImp":
     load_dataset()
 
 

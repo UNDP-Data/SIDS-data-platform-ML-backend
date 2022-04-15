@@ -6,7 +6,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field, validator, root_validator
 from pydantic.fields import ModelField
 
-from models.imputation import Interpolator, Schema, Model, Interval
+from models.twolvlImp import Interpolator, Schema, Model, Interval
 
 
 class PredictorListRequest(BaseModel):
@@ -27,16 +27,22 @@ class PredictorListRequest(BaseModel):
 
 class TrainRequest(BaseModel):
     manual_predictors: Optional[List[str]] = Field(None, title="List of predictors (for Manual)",
-                                                   example=["wdi-AG.LND.AGRI.K2"])
-    number_predictor: Optional[int] = Field(None, title="Number of predictors (for Automatic)", example=10)
-    target_year: str = Field(..., title="The year under consideration", example="2001")
-    target: str = Field(..., title="Indicator whose values will be imputed", example="key-wdi-EG.ELC.ACCS.ZS")
-    interpolator: Interpolator = Field(..., title="Type of imputer to use for interpolation", example=Interpolator.KNNImputer.name)
+                                                   example=["wdi-AG.LND.AGRI.K2"], req_endpoint="/predictors",
+                                                   required_if=[{"schema": "MANUAL"}])
+    number_predictor: Optional[int] = Field(None, title="Number of predictors (for Automatic)", example=10,
+                                            required_if=[{"schema": "AFS"}, {"schema": "PCA"}])
+    target_year: str = Field(..., title="The year under consideration", example="2001", req_endpoint="/target_years")
+    target: str = Field(..., title="Indicator whose values will be imputed", example="key-wdi-EG.ELC.ACCS.ZS",
+                        req_endpoint="/targets")
+    interpolator: Interpolator = Field(..., title="Base Imputer", description="The base imputer is a standard model "
+                                                                              "that will be used to interpolate missing"
+                                                                              " values in the most complete prediction "
+                                                                              "features", example=Interpolator.KNNImputer.name)
     scheme: Schema = Field(..., title="Feature selection method selected by user", example=Schema.MANUAL.name)
     estimators: int = Field(..., title="Number of trees for tree based models", example=10)
     model: Model = Field(..., title="Type of model to be trained", example=Model.rfr.name)
     interval: Interval = Field(..., title="Type of prediction interval", example=Interval.quantile.name)
-    dataset: str = Field(..., title="Dataset", example="key")
+    dataset: str = Field(..., title="Dataset", example="key", req_endpoint="/datasets")
 
     @validator('*', pre=True)
     def validate_all(cls, v, field: ModelField, config, values):
@@ -57,6 +63,7 @@ class TrainRequest(BaseModel):
             raise ValueError("number_predictor field required for the given scheme")
 
         return values
+
 
 class ModelResponse(BaseModel):
     rmse_deviation: Optional[float] = Field(..., description="Root-mean-square deviation")

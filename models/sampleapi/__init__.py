@@ -13,7 +13,7 @@ class SampleResponse(BaseModel):
 
 
 router = APIRouter(
-    prefix="/sample_model",
+    prefix="/sampleapi",
     tags=["Sample Model"],
     responses={404: {"description": "Not found"}},
 )
@@ -25,5 +25,5 @@ async def test_endpoint1(req: SampleRequest):
 
 
 @router.post('/test_endpoint2')
-async def test_endpoint1(name: str):
+async def test_endpoint2(name: str):
     return "Hi "+name

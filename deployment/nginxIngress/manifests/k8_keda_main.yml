@@ -111,7 +111,7 @@ spec:
         - name: AzureWebJobsKubernetesSecretName
           value: secrets/func-keys-kube-secret-sidmlbackend
         - name: MODEL_SERVICE
-          value: imputation
+          value: twolvlImp
         envFrom:
         - secretRef:
             name: sidmlbackend
