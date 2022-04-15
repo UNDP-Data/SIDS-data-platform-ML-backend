@@ -4,7 +4,7 @@ from fastapi import APIRouter
 from pydantic import Field
 
 from common.base_definition import BaseDefinition
-from correlation.correlation import correlation_function
+# from correlation.correlation import correlation_function
 
 
 class CorrRequest(BaseDefinition):
