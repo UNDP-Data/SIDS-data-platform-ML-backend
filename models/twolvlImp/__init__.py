@@ -25,7 +25,6 @@ router = APIRouter(
 #         "Interval": Interval.__members__.items(),
 #     }
 
-
 @router.get('/target_sample_size')
 async def get_target_sample_size():
     return target_sample_size_requirement()
@@ -71,6 +70,17 @@ async def get_predictors(args: PredictorListRequest):
     check_target_validity(args.target_year, args.dataset, args.target)
 
     return get_predictor_list(args.target, args.target_year, args.scheme)
+
+
+@router.post('/estimate')
+async def estimate_time(req: TrainRequest):
+    check_year_validity(req.target_year)
+    check_dataset_validity(req.target_year, req.dataset)
+    check_target_validity(req.target_year, req.dataset, req.target)
+    if req.scheme == Schema.MANUAL:
+        return 30
+    else:
+        return 2*60
 
 
 @router.post('/predict', response_model=ModelResponse)
