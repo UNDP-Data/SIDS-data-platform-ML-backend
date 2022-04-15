@@ -36,6 +36,9 @@ def get_schema_inputs(route, enum_map, route_map):
                 par["req_endpoint"] = {"endpoint": val["req_endpoint"]}
                 if val["req_endpoint"] in route_map:
                     rout = route_map[val["req_endpoint"]]
+                    for e in rout.methods:
+                        par["req_endpoint"]["method"] = e
+                        break
                     par["req_endpoint"]["inputs"] = get_schema_inputs(rout, enum_map, route_map)
 
             if "required" in schema and key in schema["required"]:
