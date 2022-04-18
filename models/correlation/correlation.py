@@ -103,10 +103,10 @@ if os.getenv("MODEL_SERVICE") is None or os.getenv("MODEL_SERVICE") == "twolvlIm
 indicatorData = indicatorData[indicatorData["Country Code"].isin(SIDS)]
 
 
-def correlation_function(dataset,category,country):
-    
+def correlation_function(dataset,category,country,year):
+    year = str(year)
     codes = np.unique(indicatorMeta[(indicatorMeta.Dataset==dataset)&(indicatorMeta.Category==category)]["Indicator Code"].values)
-    data = restrcture(indicatorData,codes)
+    data = restrcture(indicatorData[["Country Code","Indicator Code",year]],codes)
 
     data.dropna(how='all',inplace=True)
     corr = data.corr()
