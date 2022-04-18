@@ -4,7 +4,7 @@ from fastapi import APIRouter
 from pydantic import Field
 
 from common.base_definition import BaseDefinition
-from models.correlation.correlation import correlation_function,cluster_function
+from models.CountryCorrelation.correlation import correlation_function,cluster_function
 
 
 class CorrRequest(BaseDefinition):
@@ -32,7 +32,7 @@ class ClusResponse(BaseDefinition):
 
 router = APIRouter(
     prefix="/correlation",
-    tags=["Correlation Model"],
+    tags=["Country Correlation Model"],
     responses={404: {"description": "Not found"}},
 )
 
