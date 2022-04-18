@@ -110,7 +110,8 @@ def correlation_function(dataset,category,country):
 
     data.dropna(how='all',inplace=True)
     corr = data.corr()
-    
-    country_corr=corr[[country]].drop(index=country).sort_values(by=country, ascending=False)
+    corr = corr.fillna('')
+    logging.info(corr.columns)
+    country_corr=corr[[country]].drop(index=country).sort_values(by=country, ascending=False).reset_index()#.rename(columns={"index":"country"})
 
-    return country_corr.to_dict(orient='split'), corr.to_dict(orient='split')
+    return country_corr.to_dict(orient='list')
