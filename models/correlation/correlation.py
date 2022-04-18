@@ -1,5 +1,10 @@
 import pandas as pd
 import numpy as np
+from sklearn.cluster import KMeans
+from sklearn import manifold
+
+
+
 import os
 import logging
 
@@ -84,6 +89,57 @@ def data_importer(path=DATASETS_PATH):
 
     return indicatorMeta, datasetMeta, indicatorData
 
+def kmeans_missing(X, n_clusters, max_iter=100):
+    """Perform K-Means clustering on data with missing values.
+
+    Args:
+      X: An [n_samples, n_features] array of data to cluster.
+      n_clusters: maximum Number of clusters to form.
+      max_iter: Maximum number of EM iterations to perform.
+    
+    Bug: Iteratively imputing using the same algorithm might unrealistically reduce intracluster variation
+        for large amount of missing data
+
+    Returns:
+      labels: An [n_samples] vector of integer labels.
+      centroids: An [n_clusters, n_features] array of cluster centroids.
+      X_hat: Copy of X with the missing values filled in.
+    """
+
+    # Initialize missing values to their column means
+    missing = ~np.isfinite(X)
+    mu = np.nanmean(X, 0, keepdims=1)
+    X_hat = np.where(missing, mu, X)
+    
+
+    for i in range(max_iter+100):
+        if i > 0:
+            # initialize KMeans with the previous set of centroids. this is much
+            # faster and makes it easier to check convergence (since labels
+            # won't be permuted on every iteration), but might be more prone to
+            # getting stuck in local minima.
+            cls = KMeans(n_clusters, init=prev_centroids)
+        else:
+            # do multiple random initializations in parallel
+            cls = KMeans(n_clusters)
+
+        # perform clustering on the filled-in data
+        labels = cls.fit_predict(X_hat)
+        centroids = cls.cluster_centers_
+
+        # fill in the missing values based on their cluster centroids
+        X_hat[missing] = centroids[labels][missing]
+
+        # when the labels have stopped changing then we have converged
+        if i > 0 and np.all(labels == prev_labels):
+            break
+
+        prev_labels = labels
+        prev_centroids = cls.cluster_centers_
+
+    return labels, centroids, X_hat
+
+
 # Import data
 indicatorMeta = None
 datasetMeta = None
@@ -115,3 +171,14 @@ def correlation_function(dataset,category,country,year):
     country_corr=corr[[country]].drop(index=country).sort_values(by=country, ascending=False).reset_index()#.rename(columns={"index":"country"})
 
     return country_corr.to_dict(orient='list')
+
+def cluster_function(dataset,category,year,k):
+    year = str(year)
+    codes = np.unique(indicatorMeta[(indicatorMeta.Dataset==dataset)&(indicatorMeta.Category==category)]["Indicator Code"].values)
+    data = restrcture(indicatorData[["Country Code","Indicator Code",year]],codes)
+    data = data.transpose()
+    data.dropna(how='all',inplace=True)
+    k = min(k, data.shape[0])
+    labels, centroids, data_imputed = kmeans_missing(data, n_clusters=k)
+
+    return data.index.tolist(),labels.tolist()
