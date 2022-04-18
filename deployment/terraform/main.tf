@@ -1,0 +1,22 @@
+module "dev_cluster" {
+    source = "./main"
+    location = "eastus"
+    acrName = "mlbackendrepo"
+    storageAccountName = "mlbackendsg"
+    aksClusterName = "mlBackend"
+    sharedDataContainerName = "datasets"
+    env = "staging"
+    resourceGrp = "ml-backend-rg"
+    clusterNodeCount = "1"
+    clusterMinNodeCount = "1"
+    clusterMaxNodeCount = "3"
+    clusterNodeSize = "standard_d2_v2"
+    appNamespace = "ml-app"
+    appName = "ml-backend"
+    createAzureAppGW = false
+    useBlobStorage = true
+    initialModelName = "twolvlImp"
+    domainName = "ml-aks-ingress.eastus.cloudapp.azure.com"
+    TLScrtLocation = "./deployment/aks-ingress-tls.crt"
+    TLSkeyLocation = "./deployment/aks-ingress-tls.key"
+}

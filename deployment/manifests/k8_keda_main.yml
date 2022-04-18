@@ -1,0 +1,144 @@
+apiVersion: v1
+data:
+  AzureWebJobsStorage: ''
+  FUNCTIONS_WORKER_RUNTIME: cHl0aG9u
+kind: Secret
+metadata:
+  name: ml-backend
+  namespace: ml-app
+---
+apiVersion: v1
+data:
+  functions.main.default: NUNCTlVhbnRGMmZOVFVvcmswcjJDam0vc3JCSWNNaGpQZWpVYXlMUmc2NmVFV3RrN09DcXZnPT0=
+  host.function.default: YTZNcUpFdzBvUVBxemQyL0lxVHVDWjJMMnNsZkwzTTJCN2VoVGpISUR1N1ovT1RNcUNjdU5BPT0=
+  host.master: Y05rUU1NWEsyZ2JWd0Q3YVdzbzh1bE1oS2tvREV2NGpjVTFaVjJYQUpKdWFXODNvL3NjYlBnPT0=
+  host.systemKey.default: SFpEeFVPT2txMmtyU0NhV0thd1U1N3I4MjFUTnZkOFBuYmRMQVcwYTJWNVNKOHdhYzBoRGlnPT0=
+kind: Secret
+metadata:
+  name: func-keys-kube-secret-ml-backend
+  namespace: ml-app
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ml-backend-function-keys-identity-svc-act
+  namespace: ml-app
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: functions-keys-manager-role
+  namespace: ml-app
+rules:
+- apiGroups:
+  - ''
+  resources:
+  - secrets
+  - configMaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ml-backend-function-keys-identity-svc-act-functions-keys-manager-rolebinding
+  namespace: ml-app
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: functions-keys-manager-role
+subjects:
+- kind: ServiceAccount
+  name: ml-backend-function-keys-identity-svc-act
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-backend-http
+  namespace: ml-app
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: ml-backend-http
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ml-backend-http
+  name: ml-backend-http
+  namespace: ml-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ml-backend-http
+  template:
+    metadata:
+      labels:
+        app: ml-backend-http
+    spec:
+      containers:
+      - env:
+        - name: AzureFunctionsJobHost__functions__0
+          value: main
+        - name: AzureWebJobsSecretStorageType
+          value: kubernetes
+        - name: AzureWebJobsKubernetesSecretName
+          value: secrets/func-keys-kube-secret-ml-backend
+        - name: MODEL_SERVICE
+          value: twolvlImp
+        envFrom:
+        - secretRef:
+            name: ml-backend
+        image: mlbackendrepo.azurecr.io/ml-backend:latest
+        name: ml-backend-http
+        ports:
+        - containerPort: 80
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 80
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 240
+        resources:
+          limits:
+            cpu: 800m
+            memory: 2048Mi
+          requests:
+            cpu: 300m
+            memory: 1024Mi
+        startupProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 80
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 240
+        volumeMounts:
+        - mountPath: /mnt/azure/datasets
+          name: azure
+      serviceAccountName: ml-backend-function-keys-identity-svc-act
+      volumes:
+      - csi:
+          driver: blob.csi.azure.com
+          volumeAttributes:
+            containerName: datasets
+            mountOptions: '"-o allow_other --file-cache-timeout-in-seconds=120"'
+            secretName: azure-secret
+        name: azure
