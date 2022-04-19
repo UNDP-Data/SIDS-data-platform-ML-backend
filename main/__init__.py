@@ -64,16 +64,3 @@ def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     logger.info('Python HTTP trigger function processed a request.')
     return AsgiMiddleware(app).handle(req, context)
 
-
-if __name__ == '__main__':
-    params = []
-    for subdir, dirs, files in os.walk("./models/"):
-        for d in dirs:
-            if not d.startswith("_") and not d.startswith("."):
-                try:
-                    module = importlib.import_module('models.' + d)
-                    router: APIRouter = getattr(module, 'router')
-                    app.include_router(router)
-                    params.append(get_param_obj(d, router))
-                except Exception as e:
-                    logger.info("Failed to load model " + d + " " + str(e))
