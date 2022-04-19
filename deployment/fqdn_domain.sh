@@ -1,5 +1,5 @@
 # Public IP address of your ingress controller
-IP=52.226.231.219
+IP=20.121.166.224
 
 # Name to associate with public IP address
 DNSNAME="ml-aks-ingress"

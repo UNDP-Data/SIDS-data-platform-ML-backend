@@ -11,3 +11,17 @@ spec:
     kind: Deployment
     name: sidmlbackend-http
   targetCPUUtilizationPercentage: 50
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: autoscaler-sampleapi-service
+  namespace: ml-app
+spec:
+  maxReplicas: 6
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: sampleapi-service
+  targetCPUUtilizationPercentage: 50
