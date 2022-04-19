@@ -9,10 +9,10 @@ metadata:
 ---
 apiVersion: v1
 data:
-  functions.main.default: NUNCTlVhbnRGMmZOVFVvcmswcjJDam0vc3JCSWNNaGpQZWpVYXlMUmc2NmVFV3RrN09DcXZnPT0=
-  host.function.default: YTZNcUpFdzBvUVBxemQyL0lxVHVDWjJMMnNsZkwzTTJCN2VoVGpISUR1N1ovT1RNcUNjdU5BPT0=
-  host.master: Y05rUU1NWEsyZ2JWd0Q3YVdzbzh1bE1oS2tvREV2NGpjVTFaVjJYQUpKdWFXODNvL3NjYlBnPT0=
-  host.systemKey.default: SFpEeFVPT2txMmtyU0NhV0thd1U1N3I4MjFUTnZkOFBuYmRMQVcwYTJWNVNKOHdhYzBoRGlnPT0=
+  functions.main.default: YlVZRDh1MVk1MzV3RHR0LzNhaS9hcldxRDMzRGN4cnAzdVhrb25JbmNlTkV2Y3VHbm5naXlnPT0=
+  host.function.default: RzU5UHgwTk5wbzNpQWJrR3F1WGRma0JobENhRk56YUFOVFlJSjlIYnRqQWRtdlNjQ0ZiWTdRPT0=
+  host.master: cE5aVTRhTy9CZUFSUm0wQkZPS3YwbEwzTzVFdHNYZ1JTVTRFb1BjRTJaNUk3QU9uWktPMU5nPT0=
+  host.systemKey.default: bVozTnBEYmxQSTc0WXM5a1g2ckVyUW9YUjEwSTR1ZmZuU2dub2xDTWFwOGZOUkk5S0R4OEl3PT0=
 kind: Secret
 metadata:
   name: func-keys-kube-secret-ml-backend
@@ -69,7 +69,7 @@ spec:
     targetPort: 80
   selector:
     app: ml-backend-http
-  type: LoadBalancer
+  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -139,6 +139,6 @@ spec:
           driver: blob.csi.azure.com
           volumeAttributes:
             containerName: datasets
-            mountOptions: '"-o allow_other --file-cache-timeout-in-seconds=120"'
+            mountOptions: -o allow_other --file-cache-timeout-in-seconds=120
             secretName: azure-secret
         name: azure

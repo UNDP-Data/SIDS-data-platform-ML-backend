@@ -17,6 +17,4 @@ module "dev_cluster" {
     useBlobStorage = true
     initialModelName = "twolvlImp"
     domainName = "ml-aks-ingress.eastus.cloudapp.azure.com"
-    TLScrtLocation = "./deployment/aks-ingress-tls.crt"
-    TLSkeyLocation = "./deployment/aks-ingress-tls.key"
 }

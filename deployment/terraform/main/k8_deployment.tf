@@ -2,8 +2,9 @@ provider "kubernetes" {
   config_path    = "./kubeconfig"
 }
 
-resource "kubernetes_namespace" "ns" {
-  depends_on     = [local_file.kubeconfig]
+resource "kubernetes_namespace" "ns_nginx" {
+  count          = var.createAzureAppGW ? 0: 1
+  depends_on     = [local_file.kubeconfig_nginx]
   metadata {
     annotations = {
       name = var.appNamespace
@@ -12,8 +13,28 @@ resource "kubernetes_namespace" "ns" {
   }
 }
 
-resource "azurerm_role_assignment" "aksacrrole" {
-  principal_id                     = azurerm_kubernetes_cluster.cluster.kubelet_identity[0].object_id
+resource "kubernetes_namespace" "ns_appgw" {
+  count          = var.createAzureAppGW ? 1: 0
+  depends_on     = [local_file.kubeconfig_appgw]
+  metadata {
+    annotations = {
+      name = var.appNamespace
+    }
+    name = var.appNamespace
+  }
+}
+
+resource "azurerm_role_assignment" "aksacrrole_nginx" {
+  count                            = var.createAzureAppGW ? 0 : 1
+  principal_id                     = azurerm_kubernetes_cluster.clusterNGINX[0].kubelet_identity[0].object_id
+  role_definition_name             = "AcrPull"
+  scope                            = azurerm_container_registry.acr.id
+  skip_service_principal_aad_check = true
+}
+
+resource "azurerm_role_assignment" "aksacrrole_appgw" {
+  count                            = var.createAzureAppGW ? 1 : 0
+  principal_id                     = azurerm_kubernetes_cluster.clusterAppGW[0].kubelet_identity[0].object_id
   role_definition_name             = "AcrPull"
   scope                            = azurerm_container_registry.acr.id
   skip_service_principal_aad_check = true
@@ -56,7 +77,7 @@ resource "null_resource" "update_k8_file" {
     "after": null_resource.deploy_export.id
   }
   provisioner "local-exec" {
-      command = "cd ../../ && python ./deployment/initial_service_update.py ${var.appName}-http ${var.initialModelName} ${var.domainName} aks-ingress-tls y blob ${var.sharedDataContainerName} 1024Mi 300m 2048Mi 800m"
+      command = "cd ../../ && python ./deployment/initial_service_update.py ${var.appName}-http ${var.initialModelName} ${var.appNamespace} aks-ingress-tls y blob ${var.sharedDataContainerName} 1024Mi 300m 2048Mi 800m ${var.createAzureAppGW}"
   }
 }
 

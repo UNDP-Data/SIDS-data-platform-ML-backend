@@ -6,12 +6,11 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-read-timeout: '600'
     nginx.ingress.kubernetes.io/proxy-send-timeout: '600'
     nginx.ingress.kubernetes.io/use-regex: 'true'
-  name: ml-backend-http
+  name: ingress-ml-backend-http
   namespace: ml-app
 spec:
   ingressClassName: nginx
   rules:
-#  - host: ml-aks-ingress.eastus.cloudapp.azure.com
   - http:
       paths:
       - backend:
@@ -28,7 +27,3 @@ spec:
               number: 80
         path: /(.*)
         pathType: Prefix
-#  tls:
-#  - hosts:
-#    - ml-aks-ingress.eastus.cloudapp.azure.com
-#    secretName: aks-ingress-tls

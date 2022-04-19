@@ -36,13 +36,13 @@ spec:
         - name: AzureWebJobsSecretStorageType
           value: kubernetes
         - name: AzureWebJobsKubernetesSecretName
-          value: secrets/func-keys-kube-secret-sidmlbackend
+          value: secrets/func-keys-kube-secret-ml-backend
         - name: MODEL_SERVICE
           value: sampleapi
         envFrom:
         - secretRef:
-            name: sidmlbackend
-        image: acrmlbackend.azurecr.io/sidmlbackend:latest
+            name: ml-backend
+        image: mlbackendrepo.azurecr.io/ml-backend:latest
         name: sampleapi-service
         ports:
         - containerPort: 80
@@ -71,4 +71,4 @@ spec:
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 240
-      serviceAccountName: sidmlbackend-function-keys-identity-svc-act
+      serviceAccountName: ml-backend-function-keys-identity-svc-act

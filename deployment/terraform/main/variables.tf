@@ -66,12 +66,12 @@ variable "domainName" {
   description = "Endpoint domain name"
 }
 
-variable "TLScrtLocation" {
-  description = "TLS certificate .crt file path"
-}
-
-variable "TLSkeyLocation" {
-  description = "TLS certificate .key file path"
-}
+#variable "TLScrtLocation" {
+#  description = "TLS certificate .crt file path"
+#}
+#
+#variable "TLSkeyLocation" {
+#  description = "TLS certificate .key file path"
+#}
 
 

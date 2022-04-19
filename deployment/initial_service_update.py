@@ -7,7 +7,7 @@ name = sys.argv[i]
 i = i+1
 model_folder = sys.argv[i]
 i = i+1
-domain = sys.argv[i]
+namespace = sys.argv[i]
 i = i+1
 ingress_tls_secret = sys.argv[i]
 i = i+1
@@ -28,6 +28,7 @@ limit_memory = sys.argv[i]
 i = i+1
 limit_cpu = sys.argv[i]
 i = i+1
+isAppGW = sys.argv[i]
 
 service_template = None
 deployment_template = None
@@ -54,6 +55,7 @@ print("Updating service and deployment file")
 
 service_template["metadata"]["name"] = name
 service_template["spec"]["selector"]["app"] = name
+service_template["spec"]["type"] = "ClusterIP"
 
 deployment_template["metadata"]["name"] = name
 deployment_template["metadata"]["labels"]["app"] = name
@@ -91,7 +93,7 @@ if isSharedVolume == "y":
             "driver": share_vol_type + ".csi.azure.com",
             "volumeAttributes": {
                 "secretName": "azure-secret",
-                "mountOptions":'"-o allow_other --file-cache-timeout-in-seconds=120"'
+                "mountOptions": "-o allow_other --file-cache-timeout-in-seconds=120"
             }
         }
       }
@@ -113,39 +115,66 @@ with open("./deployment/manifests/k8_keda_main.yml", 'w') as stream:
 print("Updating ingress file 1")
 # Read YAML file
 
-s = {
-  "apiVersion": "networking.k8s.io/v1",
-  "kind": "Ingress",
-  "metadata": {
-    "annotations": {
-      "nginx.ingress.kubernetes.io/proxy-body-size": "0",
-      "nginx.ingress.kubernetes.io/proxy-read-timeout": "600",
-      "nginx.ingress.kubernetes.io/proxy-send-timeout": "600",
-      "nginx.ingress.kubernetes.io/use-regex": "true"
-    },
-    "name": "sidmlbackend-ingress",
-    "namespace": "ml-app"
-  },
-  "spec": {
-    "ingressClassName": "nginx",
-    "rules": [
-      {
-        "host": "",
-        "http": {
-            "paths": []
+print("Application gateway created: " + isAppGW)
+if isAppGW == "true":
+    s = {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "Ingress",
+      "metadata": {
+        "name": "sidmlbackend-http-ingress",
+        "namespace": namespace,
+        "annotations": {
+          "kubernetes.io/ingress.class": "azure/application-gateway",
+          # "appgw.ingress.kubernetes.io/appgw-ssl-certificate": "httpCert",
+          "appgw.ingress.kubernetes.io/ssl-redirect": "true"
         }
+      },
+      "spec": {
+        "rules": [
+          {
+            "http": {
+              "paths": [
+              ]
+            }
+          }
+        ]
       }
-    ],
-    "tls": [
-      {
-        "secretName": "aks-ingress-tls",
-        "hosts": []
+    }
+else:
+    s = {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "Ingress",
+      "metadata": {
+        "annotations": {
+          "nginx.ingress.kubernetes.io/proxy-body-size": "0",
+          "nginx.ingress.kubernetes.io/proxy-read-timeout": "600",
+          "nginx.ingress.kubernetes.io/proxy-send-timeout": "600",
+          "nginx.ingress.kubernetes.io/use-regex": "true"
+        },
+        "name": "sidmlbackend-ingress",
+        "namespace": namespace
+      },
+      "spec": {
+        "ingressClassName": "nginx",
+        "rules": [
+          {
+            # "host": "",
+            "http": {
+                "paths": []
+            }
+          }
+        ]
+        #   ,
+        # "tls": [
+        #   {
+        #     "secretName": "aks-ingress-tls",
+        #     "hosts": []
+        #   }
+        # ]
       }
-    ]
-  }
-}
-s["metadata"]["name"] = name
-s["spec"]["rules"][0]["host"] = domain
+    }
+s["metadata"]["name"] = "ingress-" + name
+# s["spec"]["rules"][0]["host"] = domain
 
 s["spec"]["rules"][0]["http"]["paths"].append({
       "path": "/" + model_folder + "/(.*)",
@@ -159,8 +188,20 @@ s["spec"]["rules"][0]["http"]["paths"].append({
         }
       }
     })
-s["spec"]["tls"][0]["hosts"].append(domain)
-s["spec"]["tls"][0]["secretName"] = ingress_tls_secret
+s["spec"]["rules"][0]["http"]["paths"].append({
+      "path": "/(.*)",
+      "pathType": "Prefix",
+      "backend": {
+        "service": {
+          "name": name,
+          "port": {
+            "number": 80
+          }
+        }
+      }
+    })
+# s["spec"]["tls"][0]["hosts"].append(domain)
+# s["spec"]["tls"][0]["secretName"] = ingress_tls_secret
 
 with open("./deployment/manifests/ingress.yml", 'w') as stream:
     yaml.safe_dump_all([s], stream)

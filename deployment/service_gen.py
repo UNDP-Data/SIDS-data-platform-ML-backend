@@ -45,12 +45,23 @@ print("Updating service and deployment file")
 
 service_template["metadata"]["name"] = name
 service_template["spec"]["selector"]["app"] = name
+service_template["spec"]["type"] = "ClusterIP"
 
 deployment_template["metadata"]["name"] = name
 deployment_template["metadata"]["labels"]["app"] = name
 deployment_template["spec"]["selector"]["matchLabels"]["app"] = name
 deployment_template["spec"]["template"]["metadata"]["labels"]["app"] = name
 deployment_template["spec"]["template"]["spec"]["containers"][0]["name"] = name
+deployment_template["spec"]["template"]["spec"]["containers"][0]["resources"] = {
+    "limits": {
+        "cpu": "",
+        "memory": ""
+    },
+    "requests": {
+        "cpu": "",
+        "memory": ""
+    }
+}
 deployment_template["spec"]["template"]["spec"]["containers"][0]["resources"]["limits"]["cpu"] = limit_cpu
 deployment_template["spec"]["template"]["spec"]["containers"][0]["resources"]["limits"]["memory"] = limit_memory
 
