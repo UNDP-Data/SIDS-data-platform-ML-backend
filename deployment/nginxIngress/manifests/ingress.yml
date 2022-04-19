@@ -35,6 +35,13 @@ spec:
               number: 80
         path: /sampleapi/(.*)
         pathType: Prefix
+      - backend:
+          service:
+            name: sids-survey-backend
+            port:
+              number: 80
+        path: /SurveyCluster/(.*)
+        pathType: Prefix
   tls:
   - hosts:
     - ml-aks-ingress.eastus.cloudapp.azure.com
