@@ -16,3 +16,4 @@ datasets/*.json
 *.jtl
 *_x5
 **/*/kubeconfig
+**/*/terraform.tfstat*
