@@ -114,5 +114,5 @@ async def train_validate_predict(req: TrainRequest):
     logger.info("Return values %f %f", rmse, avg_rmse)
     resp = ModelResponse(rmse_deviation=avg_rmse, rmse=rmse, model_feature_importance=model_feature_importance, model_feature_names=model_feature_names, prediction=prediction,correlation=correlation,feature_importance_pie=feature_importance_pie)
     time_consumed = int(time.time()) - received_time
-    logger.info("Time Consumed(s)=%d %s", time_consumed, str(req))
+    logger.info("TimeConsumed %d (s) %s", time_consumed, str(req))
     return resp
