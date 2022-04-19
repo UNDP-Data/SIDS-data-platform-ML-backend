@@ -6,7 +6,7 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-read-timeout: '600'
     nginx.ingress.kubernetes.io/proxy-send-timeout: '600'
     nginx.ingress.kubernetes.io/use-regex: 'true'
-  name: ingress-ml-backend-http
+  name: ingress-sidmlbackend-http
   namespace: ml-app
 spec:
   ingressClassName: nginx
@@ -15,14 +15,14 @@ spec:
       paths:
       - backend:
           service:
-            name: ml-backend-http
+            name: sidmlbackend-http
             port:
               number: 80
         path: /twolvlImp/(.*)
         pathType: Prefix
       - backend:
           service:
-            name: ml-backend-http
+            name: sidmlbackend-http
             port:
               number: 80
         path: /(.*)

@@ -1,1 +1,1 @@
-{"apiVersion": "v1", "kind": "Service", "metadata": {"name": "ml-backend-http", "namespace": "ml-app"}, "spec": {"selector": {"app": "ml-backend-http"}, "ports": [{"protocol": "TCP", "port": 80, "targetPort": 80}], "type": "LoadBalancer"}}
+{"apiVersion": "v1", "kind": "Service", "metadata": {"name": "sidmlbackend-http", "namespace": "ml-app"}, "spec": {"selector": {"app": "sidmlbackend-http"}, "ports": [{"protocol": "TCP", "port": 80, "targetPort": 80}], "type": "LoadBalancer"}}

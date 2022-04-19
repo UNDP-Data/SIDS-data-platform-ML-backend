@@ -4,24 +4,24 @@ data:
   FUNCTIONS_WORKER_RUNTIME: cHl0aG9u
 kind: Secret
 metadata:
-  name: ml-backend
+  name: sidmlbackend
   namespace: ml-app
 ---
 apiVersion: v1
 data:
-  functions.main.default: YlVZRDh1MVk1MzV3RHR0LzNhaS9hcldxRDMzRGN4cnAzdVhrb25JbmNlTkV2Y3VHbm5naXlnPT0=
-  host.function.default: RzU5UHgwTk5wbzNpQWJrR3F1WGRma0JobENhRk56YUFOVFlJSjlIYnRqQWRtdlNjQ0ZiWTdRPT0=
-  host.master: cE5aVTRhTy9CZUFSUm0wQkZPS3YwbEwzTzVFdHNYZ1JTVTRFb1BjRTJaNUk3QU9uWktPMU5nPT0=
-  host.systemKey.default: bVozTnBEYmxQSTc0WXM5a1g2ckVyUW9YUjEwSTR1ZmZuU2dub2xDTWFwOGZOUkk5S0R4OEl3PT0=
+  functions.main.default: cmN0YXVzNVd0QmZhak9JMUdBTEtMcnVIeGN1REFmT2JCdTZYa1JkVXI2WUlnTWhBQVRGR0xBPT0=
+  host.function.default: OHpzSG9VTWVNU2g4TE9ZSDJ6YmNoenFndkVENEJacmJCNUZnbUkvQWdiVG9VV2czVlhCcXdnPT0=
+  host.master: bTVNd00zT2dnTGNCbUxoRlZ2VWhmWDZBV21BM1o1Njh2blhldFE3QzJVMWRJN1VNbWhrcEZnPT0=
+  host.systemKey.default: cTYzUU5tbHJOUGZtdTZzUEtaNVRhZmRhZXdDbWRWZ1dON2lTMW5PelQyOHNhQjVENDliYW9nPT0=
 kind: Secret
 metadata:
-  name: func-keys-kube-secret-ml-backend
+  name: func-keys-kube-secret-sidmlbackend
   namespace: ml-app
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: ml-backend-function-keys-identity-svc-act
+  name: sidmlbackend-function-keys-identity-svc-act
   namespace: ml-app
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -47,7 +47,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: ml-backend-function-keys-identity-svc-act-functions-keys-manager-rolebinding
+  name: sidmlbackend-function-keys-identity-svc-act-functions-keys-manager-rolebinding
   namespace: ml-app
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -55,12 +55,12 @@ roleRef:
   name: functions-keys-manager-role
 subjects:
 - kind: ServiceAccount
-  name: ml-backend-function-keys-identity-svc-act
+  name: sidmlbackend-function-keys-identity-svc-act
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: ml-backend-http
+  name: sidmlbackend-http
   namespace: ml-app
 spec:
   ports:
@@ -68,25 +68,25 @@ spec:
     protocol: TCP
     targetPort: 80
   selector:
-    app: ml-backend-http
+    app: sidmlbackend-http
   type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: ml-backend-http
-  name: ml-backend-http
+    app: sidmlbackend-http
+  name: sidmlbackend-http
   namespace: ml-app
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ml-backend-http
+      app: sidmlbackend-http
   template:
     metadata:
       labels:
-        app: ml-backend-http
+        app: sidmlbackend-http
     spec:
       containers:
       - env:
@@ -95,14 +95,14 @@ spec:
         - name: AzureWebJobsSecretStorageType
           value: kubernetes
         - name: AzureWebJobsKubernetesSecretName
-          value: secrets/func-keys-kube-secret-ml-backend
+          value: secrets/func-keys-kube-secret-sidmlbackend
         - name: MODEL_SERVICE
           value: twolvlImp
         envFrom:
         - secretRef:
-            name: ml-backend
-        image: mlbackendrepo.azurecr.io/ml-backend:latest
-        name: ml-backend-http
+            name: sidmlbackend
+        image: acrmlbackend.azurecr.io/sidmlbackend:latest
+        name: sidmlbackend-http
         ports:
         - containerPort: 80
         readinessProbe:
@@ -133,7 +133,7 @@ spec:
         volumeMounts:
         - mountPath: /mnt/azure/datasets
           name: azure
-      serviceAccountName: ml-backend-function-keys-identity-svc-act
+      serviceAccountName: sidmlbackend-function-keys-identity-svc-act
       volumes:
       - csi:
           driver: blob.csi.azure.com

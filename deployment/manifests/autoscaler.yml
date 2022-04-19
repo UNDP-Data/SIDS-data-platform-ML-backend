@@ -1,7 +1,7 @@
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
-  name: autoscaler-ml-backend-http
+  name: autoscaler-sidmlbackend-http
   namespace: ml-app
 spec:
   maxReplicas: 6
@@ -9,5 +9,5 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: ml-backend-http
+    name: sidmlbackend-http
   targetCPUUtilizationPercentage: 50
