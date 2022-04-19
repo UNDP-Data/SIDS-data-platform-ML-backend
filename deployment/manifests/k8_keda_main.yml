@@ -9,10 +9,10 @@ metadata:
 ---
 apiVersion: v1
 data:
-  functions.main.default: cmN0YXVzNVd0QmZhak9JMUdBTEtMcnVIeGN1REFmT2JCdTZYa1JkVXI2WUlnTWhBQVRGR0xBPT0=
-  host.function.default: OHpzSG9VTWVNU2g4TE9ZSDJ6YmNoenFndkVENEJacmJCNUZnbUkvQWdiVG9VV2czVlhCcXdnPT0=
-  host.master: bTVNd00zT2dnTGNCbUxoRlZ2VWhmWDZBV21BM1o1Njh2blhldFE3QzJVMWRJN1VNbWhrcEZnPT0=
-  host.systemKey.default: cTYzUU5tbHJOUGZtdTZzUEtaNVRhZmRhZXdDbWRWZ1dON2lTMW5PelQyOHNhQjVENDliYW9nPT0=
+  functions.main.default: NE9NMjh5Mnd0QmEyQ3JHZjRjZ1JsZ2VMYXUvUFBmbDBNbTlmTWd6OGV0b0x0b09oWFQycER3PT0=
+  host.function.default: ZHJCbUJYak4yd05kWnpYYUR3d051TXRtZ0N0WlZEa1cwVVVvaXR0RVQ5Um1EQjNHYXk1YVZRPT0=
+  host.master: VDFyMUZERGxROEF3eTQxUHBJalhJMm9kYVl3SDVsTHA5Z2pOMmc4L2EvUnBHc3cyelhySUFRPT0=
+  host.systemKey.default: UWFSaTlRU3dQQU9hakpud1p5MHY4WlNSUFFqVW1iMFo5OEhTMC9OTzFqMmRsV3NsL25wZjJBPT0=
 kind: Secret
 metadata:
   name: func-keys-kube-secret-sidmlbackend
@@ -116,10 +116,10 @@ spec:
           timeoutSeconds: 240
         resources:
           limits:
-            cpu: 800m
+            cpu: 1000m
             memory: 2048Mi
           requests:
-            cpu: 300m
+            cpu: 400m
             memory: 1024Mi
         startupProbe:
           failureThreshold: 3
