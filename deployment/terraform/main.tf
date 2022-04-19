@@ -1,0 +1,20 @@
+module "dev_cluster" {
+    source = "./main"
+    location = "eastus"
+    acrName = "acrmlbackend"
+    storageAccountName = "mlbackendstorage"
+    aksClusterName = "sidMLBackendCluster"
+    sharedDataContainerName = "datasets"
+    env = "staging"
+    resourceGrp = "ml-backend-group"
+    clusterNodeCount = "1"
+    clusterMinNodeCount = "1"
+    clusterMaxNodeCount = "3"
+    clusterNodeSize = "standard_d2_v2"
+    appNamespace = "ml-app"
+    appName = "sidmlbackend"
+    createAzureAppGW = false
+    useBlobStorage = true
+    initialModelName = "twolvlImp"
+    domainName = "ml-aks-ingress.eastus.cloudapp.azure.com"
+}

@@ -1,18 +1,18 @@
-data:
-  FUNCTIONS_WORKER_RUNTIME: cHl0aG9u
-  AzureWebJobsStorage: ''
 apiVersion: v1
+data:
+  AzureWebJobsStorage: ''
+  FUNCTIONS_WORKER_RUNTIME: cHl0aG9u
 kind: Secret
 metadata:
   name: sidmlbackend
   namespace: ml-app
 ---
-data:
-  host.master: dnRkNGh0NVRHL09DOG9vazBlZURNdTF5VkZRVDROd213NXU3SHI5dUc0Y1hFT0VqTTJYc3Z3PT0=
-  host.function.default: MmozaG9NOXBLU05hczNMU1RmQTFEcC9SZWxVWkQ3L3ZVZFJvNHVUVHlRUURrQ1dNS0swT3BnPT0=
-  host.systemKey.default: ODNJRHJWUFNYc2FvNXc3Rks1OGU3bjJ1NDlJbFZZZWpzejJhUWFCY3EwUVBtMWdHV0w5Nk1BPT0=
-  functions.main.default: Wm1aUlhKUlhoeUxuTVlKYTh4ZmxabDNCdXlMZ2F4czZTMGNwVHFwTmM0R0Z5VGF3NWljVmVRPT0=
 apiVersion: v1
+data:
+  functions.main.default: cmN0YXVzNVd0QmZhak9JMUdBTEtMcnVIeGN1REFmT2JCdTZYa1JkVXI2WUlnTWhBQVRGR0xBPT0=
+  host.function.default: OHpzSG9VTWVNU2g4TE9ZSDJ6YmNoenFndkVENEJacmJCNUZnbUkvQWdiVG9VV2czVlhCcXdnPT0=
+  host.master: bTVNd00zT2dnTGNCbUxoRlZ2VWhmWDZBV21BM1o1Njh2blhldFE3QzJVMWRJN1VNbWhrcEZnPT0=
+  host.systemKey.default: cTYzUU5tbHJOUGZtdTZzUEtaNVRhZmRhZXdDbWRWZ1dON2lTMW5PelQyOHNhQjVENDliYW9nPT0=
 kind: Secret
 metadata:
   name: func-keys-kube-secret-sidmlbackend
@@ -24,6 +24,11 @@ metadata:
   name: sidmlbackend-function-keys-identity-svc-act
   namespace: ml-app
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: functions-keys-manager-role
+  namespace: ml-app
 rules:
 - apiGroups:
   - ''
@@ -38,12 +43,12 @@ rules:
   - update
   - patch
   - delete
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: functions-keys-manager-role
-  namespace: ml-app
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: sidmlbackend-function-keys-identity-svc-act-functions-keys-manager-rolebinding
+  namespace: ml-app
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -51,11 +56,6 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: sidmlbackend-function-keys-identity-svc-act
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: sidmlbackend-function-keys-identity-svc-act-functions-keys-manager-rolebinding
-  namespace: ml-app
 ---
 apiVersion: v1
 kind: Service
@@ -63,21 +63,21 @@ metadata:
   name: sidmlbackend-http
   namespace: ml-app
 spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
   selector:
     app: sidmlbackend-http
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 80
   type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sidmlbackend-http
-  namespace: ml-app
   labels:
     app: sidmlbackend-http
+  name: sidmlbackend-http
+  namespace: ml-app
 spec:
   replicas: 1
   selector:
@@ -89,21 +89,7 @@ spec:
         app: sidmlbackend-http
     spec:
       containers:
-      - name: sidmlbackend-http
-        image: acrmlbackend.azurecr.io/sidmlbackend:latest
-        resources:
-          limits:
-            cpu: 300m
-            memory: 2048Mi
-          requests:
-            cpu: 100m
-            memory: 512Mi
-        volumeMounts:
-          - name: azure
-            mountPath: /mnt/azure
-        ports:
-        - containerPort: 80
-        env:
+      - env:
         - name: AzureFunctionsJobHost__functions__0
           value: main
         - name: AzureWebJobsSecretStorageType
@@ -115,32 +101,44 @@ spec:
         envFrom:
         - secretRef:
             name: sidmlbackend
+        image: acrmlbackend.azurecr.io/sidmlbackend:latest
+        name: sidmlbackend-http
+        ports:
+        - containerPort: 80
         readinessProbe:
           failureThreshold: 3
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 240
           httpGet:
             path: /
             port: 80
             scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 240
+        resources:
+          limits:
+            cpu: 800m
+            memory: 2048Mi
+          requests:
+            cpu: 300m
+            memory: 1024Mi
         startupProbe:
           failureThreshold: 3
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 240
           httpGet:
             path: /
             port: 80
             scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 240
+        volumeMounts:
+        - mountPath: /mnt/azure/datasets
+          name: azure
       serviceAccountName: sidmlbackend-function-keys-identity-svc-act
       volumes:
-        - name: azure
-          csi:
-            driver: file.csi.azure.com
-            volumeAttributes:
-              secretName: azure-secret
-              shareName: aksshare
-              mountOptions: "dir_mode=0777,file_mode=0777,cache=strict,actimeo=30"
----
-
+      - csi:
+          driver: blob.csi.azure.com
+          volumeAttributes:
+            containerName: datasets
+            mountOptions: -o allow_other --file-cache-timeout-in-seconds=120
+            secretName: azure-secret
+        name: azure

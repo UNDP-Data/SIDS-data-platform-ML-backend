@@ -4,11 +4,10 @@ metadata:
   name: autoscaler-sidmlbackend-http
   namespace: ml-app
 spec:
+  maxReplicas: 6
+  minReplicas: 1
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
     name: sidmlbackend-http
-  minReplicas: 1
-  maxReplicas: 6
   targetCPUUtilizationPercentage: 50
----

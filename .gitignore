@@ -14,3 +14,5 @@ datasets/*.json
 **/*/*.csr
 *.log
 *.jtl
+*_x5
+**/*/kubeconfig

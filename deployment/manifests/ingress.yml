@@ -6,13 +6,12 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-read-timeout: '600'
     nginx.ingress.kubernetes.io/proxy-send-timeout: '600'
     nginx.ingress.kubernetes.io/use-regex: 'true'
-  name: sidmlbackend-ingress
+  name: ingress-sidmlbackend-http
   namespace: ml-app
 spec:
   ingressClassName: nginx
   rules:
-  - host: ml-aks-ingress.eastus.cloudapp.azure.com
-    http:
+  - http:
       paths:
       - backend:
           service:
