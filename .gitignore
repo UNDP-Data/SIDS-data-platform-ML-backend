@@ -15,3 +15,4 @@ datasets/*.json
 *.log
 *.jtl
 *_x5
+**/*/kubeconfig

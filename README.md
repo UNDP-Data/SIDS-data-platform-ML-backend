@@ -115,6 +115,16 @@ Source code repository structured in the following way
 7. Cluster will be ready in a few minutes. Can get the cluster public ip from Azure Console Kubernetes Services -> Services and Ingresses -> Ingress -> External Address
 8. View swagger documentation from ``http://<public ip>/docs``
 
+#### Deploy on Existing Cluster
+Import your existing resources using ``terraform import <module.<module_name>.<resource module name>.<resource name> /subscriptions/<subscription id>/<resource address>``. 
+   E.g.,: Importing existing resource group named `ml-backend-group`
+   ```
+   terraform import module.dev_cluster.azurerm_resource_group.rg \
+  /subscriptions/<subscription id>/resourceGroups/ml-backend-group
+
+
+   ``` 
+
 ### CI/CD
 CI/CD implemented using Github Actions. [config file](./.github/workflows/main.yml). It performs the following actions
 - Build a docker container and push it to the Azure Container Registry (ACR)

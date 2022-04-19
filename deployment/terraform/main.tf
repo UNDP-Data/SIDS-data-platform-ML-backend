@@ -1,18 +1,18 @@
 module "dev_cluster" {
     source = "./main"
     location = "eastus"
-    acrName = "mlbackendrepo"
-    storageAccountName = "mlbackendsg"
-    aksClusterName = "mlBackend"
+    acrName = "acrmlbackend"
+    storageAccountName = "mlbackendstorage"
+    aksClusterName = "sidMLBackendCluster"
     sharedDataContainerName = "datasets"
     env = "staging"
-    resourceGrp = "ml-backend-rg"
+    resourceGrp = "ml-backend-group"
     clusterNodeCount = "1"
     clusterMinNodeCount = "1"
     clusterMaxNodeCount = "3"
     clusterNodeSize = "standard_d2_v2"
     appNamespace = "ml-app"
-    appName = "ml-backend"
+    appName = "sidmlbackend"
     createAzureAppGW = false
     useBlobStorage = true
     initialModelName = "twolvlImp"

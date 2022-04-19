@@ -3,7 +3,7 @@ provider "azurerm" {
 }
 
 resource "azurerm_resource_group" "rg" {
-  name     = "${var.resourceGrp}-${var.env}"
+  name     = var.resourceGrp
   location = var.location
 
   tags = {
