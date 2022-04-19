@@ -1,3 +1,5 @@
+import time
+
 from fastapi import APIRouter, HTTPException
 from fastapi.params import Depends
 
@@ -65,10 +67,10 @@ async def get_dimensions(target: str, target_year: str, dataset: str):
 
 @router.post('/predictors')
 async def get_predictors(args: PredictorListRequest):
+
     check_year_validity(args.target_year)
     check_dataset_validity(args.target_year, args.dataset)
     check_target_validity(args.target_year, args.dataset, args.target)
-
     return get_predictor_list(args.target, args.target_year, args.scheme)
 
 
@@ -85,11 +87,13 @@ async def estimate_time(req: TrainRequest):
 
 @router.post('/predict', response_model=ModelResponse)
 async def train_validate_predict(req: TrainRequest):
+    received_time = int(time.time())
     check_year_validity(req.target_year)
     check_dataset_validity(req.target_year, req.dataset)
     check_target_validity(req.target_year, req.dataset, req.target)
 
     logger.info("Request received %s", req.target)
+
 
     if req.scheme == Schema.MANUAL:
         manual_predictors = req.manual_predictors
@@ -107,5 +111,7 @@ async def train_validate_predict(req: TrainRequest):
                         req.model,
                         req.interval, None)
     logger.info("Return values %f %f", rmse, avg_rmse)
-    return ModelResponse(rmse_deviation=avg_rmse, rmse=rmse, model_feature_importance=model_feature_importance, model_feature_names=model_feature_names, prediction=prediction,correlation=correlation,feature_importance_pie=feature_importance_pie)
-
+    resp = ModelResponse(rmse_deviation=avg_rmse, rmse=rmse, model_feature_importance=model_feature_importance, model_feature_names=model_feature_names, prediction=prediction,correlation=correlation,feature_importance_pie=feature_importance_pie)
+    time_consumed = int(time.time()) - received_time
+    logger.info("Time consumed for the request {} {}", time_consumed, req)
+    return resp

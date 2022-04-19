@@ -121,9 +121,26 @@ Import your existing resources using ``terraform import <module.<module_name>.<r
    ```
    terraform import module.dev_cluster.azurerm_resource_group.rg \
   /subscriptions/<subscription id>/resourceGroups/ml-backend-group
-
-
    ``` 
+#### Add Different Node Pool for Specific Service
+1. Create a new node pool with different configuration by adding below code to the Terrafrom cluster_creation.tf file. Change values based on your requirement.
+```
+resource "azurerm_kubernetes_cluster_node_pool" "survey" {
+  name                  = "survey"
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.clusterNGINX[0].id
+  vm_size               = "Standard_DS2_v2"
+  node_count            = 1
+
+  tags = {
+    Environment = "Testing"
+  }
+}
+```
+2. Then we can set specific kubernetes deployment for this node by adding following code under deployment spec. [More](https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes/)
+```
+nodeSelector:
+    agentpool: survey
+```
 
 ### CI/CD
 CI/CD implemented using Github Actions. [config file](./.github/workflows/main.yml). It performs the following actions
