@@ -48,10 +48,10 @@ jobs:
       run: kubectl rollout restart deployment --namespace=${{ env.NAMESPACE }}
 
     - name: Update manifest changes
-      run: kubectl apply -f deployment/nginxIngress/manifests
+      run: kubectl apply -f deployment/manifests
 
     - name: Update auto genereted manifest changes
-      run: kubectl apply -f deployment/nginxIngress/autogen_manifests
+      run: kubectl apply -f deployment/autogen_manifests
 
     # # Deploy app to AKS
     # - uses: azure/k8s-deploy@v1
