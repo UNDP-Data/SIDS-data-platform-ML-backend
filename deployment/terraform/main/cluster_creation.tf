@@ -11,6 +11,13 @@ resource "azurerm_resource_group" "rg" {
   }
 }
 
+resource "azurerm_log_analytics_workspace" "logw" {
+    # The WorkSpace name has to be unique across the whole of azure, not just the current subscription/tenant.
+    name                = "${var.appName}-log-workspace"
+    location            = var.location
+    resource_group_name = azurerm_resource_group.rg.name
+}
+
 
 resource "azurerm_kubernetes_cluster" "clusterNGINX" {
   count               = var.createAzureAppGW ? 0: 1
@@ -27,6 +34,10 @@ resource "azurerm_kubernetes_cluster" "clusterNGINX" {
     enable_auto_scaling = true
 
   }
+
+   oms_agent {
+    log_analytics_workspace_id = azurerm_log_analytics_workspace.logw.id
+   }
 
   identity {
     type = "SystemAssigned"
@@ -54,6 +65,9 @@ resource "azurerm_kubernetes_cluster" "clusterAppGW" {
         gateway_name               = "${var.aksClusterName}-AGIC"
     }
 
+     oms_agent {
+      log_analytics_workspace_id = azurerm_log_analytics_workspace.logw.id
+     }
 
   identity {
     type = "SystemAssigned"
