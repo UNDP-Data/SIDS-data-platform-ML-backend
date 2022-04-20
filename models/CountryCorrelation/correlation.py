@@ -105,7 +105,7 @@ indicatorData = None
 
 def load_dataset():
     global indicatorMeta, datasetMeta, indicatorData
-    indicatorMeta, datasetMeta, indicatorData = data_loader.load_data("indicator_data", "twolvlImp", data_importer())
+    indicatorMeta, datasetMeta, indicatorData = data_loader.load_data("twolvlImp", data_importer())
     # Sub-select SIDS
     indicatorData = indicatorData[indicatorData["Country Code"].isin(SIDS)]
 
