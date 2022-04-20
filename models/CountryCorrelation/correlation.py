@@ -10,6 +10,7 @@ import logging
 
 
 from common.constants import SIDS, DATASETS_PATH
+from dataloader import data_loader
 
 
 def structure_data(data):
@@ -148,16 +149,12 @@ indicatorData = None
 
 def load_dataset():
     global indicatorMeta, datasetMeta, indicatorData
-    if indicatorData is None:
-        indicatorMeta, datasetMeta, indicatorData = data_importer()
+    indicatorMeta, datasetMeta, indicatorData = data_loader.load_data("indicator_data", "twolvlImp", data_importer())
+    # Sub-select SIDS
+    indicatorData = indicatorData[indicatorData["Country Code"].isin(SIDS)]
 
 
-if os.getenv("MODEL_SERVICE") is None or os.getenv("MODEL_SERVICE") == "twolvlImp":
-    load_dataset()
-
-# Sub-select SIDS 
-indicatorData = indicatorData[indicatorData["Country Code"].isin(SIDS)]
-
+load_dataset()
 
 def correlation_function(dataset,category,country,year):
     year = str(year)
