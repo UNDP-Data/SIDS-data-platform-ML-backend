@@ -20,6 +20,7 @@ from sklearn.preprocessing import MinMaxScaler
 from common.constants import SIDS, DATASETS_PATH
 from common.errors import Error
 from common.logger import logger
+from dataloader import data_loader
 from models.twolvlImp import Schema, Interpolator, Interval, Model
 
 seed = 7
@@ -410,13 +411,10 @@ indicatorData = None
 
 def load_dataset():
     global indicatorMeta, datasetMeta, indicatorData
-    if indicatorData is None:
-        indicatorMeta, datasetMeta, indicatorData = data_importer()
+    indicatorMeta, datasetMeta, indicatorData = data_loader.load_data("indicator_data", "twolvlImp", data_importer())
 
 
-if os.getenv("MODEL_SERVICE") is None or os.getenv("MODEL_SERVICE") == "twolvlImp":
-    load_dataset()
-
+load_dataset()
 
 
 def dimension_options(target, target_year):

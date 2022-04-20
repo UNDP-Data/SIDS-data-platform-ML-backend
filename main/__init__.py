@@ -64,3 +64,4 @@ def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     logger.info('Python HTTP trigger function processed a request.')
     return AsgiMiddleware(app).handle(req, context)
 
+
