@@ -1,0 +1,131 @@
+{
+    "id": "TimeConsumption_Generator_task",
+    "title": "TimeConsumption_Generator_task",
+    "description": "Generate time consumption file in dataset container",
+    "iconType": "ScheduledTask",
+    "skuType": "Consumption",
+    "data": {
+        "definition": {
+            "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+            "contentVersion": "1.0.0.0",
+            "parameters": {
+                "$connections": {
+                    "defaultValue": {},
+                    "type": "Object"
+                }
+            },
+            "triggers": {
+                "Recurrence": {
+                    "recurrence": {
+                        "frequency": "Minute",
+                        "interval": 60
+                    },
+                    "evaluatedRecurrence": {
+                        "frequency": "Minute",
+                        "interval": 60
+                    },
+                    "type": "Recurrence"
+                }
+            },
+            "actions": {
+                "Compose": {
+                    "runAfter": {
+                        "Parse_JSON": [
+                            "Succeeded"
+                        ]
+                    },
+                    "type": "Compose",
+                    "inputs": "@body('Parse_JSON')"
+                },
+                "Create_blob_(V2)": {
+                    "runAfter": {
+                        "Compose": [
+                            "Succeeded"
+                        ]
+                    },
+                    "type": "ApiConnection",
+                    "inputs": {
+                        "body": "@outputs('Compose')",
+                        "headers": {
+                            "ReadFileMetadataFromServer": true
+                        },
+                        "host": {
+                            "connection": {
+                                "name": "@parameters('$connections')['azureblob']['connectionId']"
+                            }
+                        },
+                        "method": "post",
+                        "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/files",
+                        "queries": {
+                            "folderPath": "/datasets",
+                            "name": "time_consumption",
+                            "queryParametersSingleEncoded": true
+                        }
+                    },
+                    "runtimeConfiguration": {
+                        "contentTransfer": {
+                            "transferMode": "Chunked"
+                        }
+                    }
+                },
+                "Parse_JSON": {
+                    "runAfter": {
+                        "Run_query_and_list_results_2": [
+                            "Succeeded"
+                        ]
+                    },
+                    "type": "ParseJson",
+                    "inputs": {
+                        "content": "@body('Run_query_and_list_results_2')",
+                        "schema": {
+                            "properties": {
+                                "avg_time_parsed": {
+                                    "type": "integer"
+                                },
+                                "scheme_e": {
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                },
+                "Run_query_and_list_results_2": {
+                    "runAfter": {},
+                    "type": "ApiConnection",
+                    "inputs": {
+                        "body": "ContainerLog\n| parse LogEntry with * \"Time Consumed(s)=\" Time \" \" other_params \" scheme=<Schema.\" scheme_e \": '\" scheme \"'\" remain_params\n| where LogEntry contains \"Time Consumed(s)=\"\n| extend time_parsed    = toint(Time)\n| summarize avg(time_parsed) by scheme_e\n",
+                        "host": {
+                            "connection": {
+                                "name": "@parameters('$connections')['azuremonitorlogs']['connectionId']"
+                            }
+                        },
+                        "method": "post",
+                        "path": "/queryData",
+                        "queries": {
+                            "resourcegroups": "ml-backend-group",
+                            "resourcename": "sidmlbackend-log-workspace",
+                            "resourcetype": "Log Analytics Workspace",
+                            "subscriptions": "006c8a06-bc98-4f2e-a166-b56f87c77268",
+                            "timerange": "Last 3 days"
+                        }
+                    }
+                }
+            },
+            "outputs": {}
+        },
+        "parameters": {},
+        "connections": {
+            "azureblob": {
+                "id": "/subscriptions/0000-0000/providers/Microsoft.Web/locations/eastus/managedApis/azureblob",
+                "connectionId": "",
+                "connectionName": ""
+            },
+            "azuremonitorlogs": {
+                "id": "/subscriptions/0000-0000/providers/Microsoft.Web/locations/eastus/managedApis/azuremonitorlogs",
+                "connectionId": "",
+                "connectionName": ""
+            }
+        }
+    }
+}
