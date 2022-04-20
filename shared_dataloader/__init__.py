@@ -7,7 +7,8 @@ class DataLoader(object):
     def __init__(self):
         self.store = {}
 
-    def load_data(self, key: str, service_name: str, load_func):
+    def load_data(self, service_name: str, load_func):
+        key = service_name
         if os.getenv("MODEL_SERVICE") is None or os.getenv("MODEL_SERVICE") == service_name:
             if key not in self.store:
                 logger.info("Data loading for key %s", key)

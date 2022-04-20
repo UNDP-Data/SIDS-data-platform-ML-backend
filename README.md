@@ -78,6 +78,7 @@ Source code repository structured in the following way
 
 - **main** - Root RESTAPI implementation and azure function configuration
 - **api_app** - FastAPI application configuration
+- **shared_dataloader** - Shared data loader to share data across multiple models
 - **common**: 
    - utility.py - System wide utility functions 
    - constants.py - System wide Constants 
@@ -123,7 +124,7 @@ Import your existing resources using ``terraform import <module.<module_name>.<r
   /subscriptions/<subscription id>/resourceGroups/ml-backend-group
    ``` 
 #### Add Different Node Pool for Specific Service
-1. Create a new node pool with different configuration by adding below code to the Terrafrom cluster_creation.tf file. Change values based on your requirement.
+1. Create a new node pool with different configuration by adding below code to the Terraform cluster_creation.tf file. Change values based on your requirement.
 ```
 resource "azurerm_kubernetes_cluster_node_pool" "survey" {
   name                  = "survey"
@@ -208,8 +209,12 @@ CI/CD implemented using Github Actions. [config file](./.github/workflows/main.y
     please refer [pydantic validators](https://pydantic-docs.helpmanual.io/usage/validators/) for more information.
 
 
-4. Use `DATASET_PATH` environment variable for dataset loading. 
-5. By default, newly added endpoint will route through default Kubernetes service.
+4. Use `DATASET_PATH` environment variable for dataset loading.
+5. If you are shared same data loading across multiple models, create a data loader in `shared_dataloader` similar to [indicator_dataloader.py](./shared_dataloader/indicator_dataloader.py) and loaded data in the model as below code
+   ```
+   indicatorMeta, datasetMeta, indicatorData = data_loader.load_data("<model service name>", data_importer())
+   ```
+6. By default, newly added endpoint will route through default Kubernetes service.
 
 #### Add Model Endpoint as a New Kubernetes Service
 1. It is better to serve as a different service on following reasons
