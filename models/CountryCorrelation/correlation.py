@@ -10,7 +10,8 @@ import logging
 
 
 from common.constants import SIDS, DATASETS_PATH
-from dataloader import data_loader
+from shared_dataloader import data_loader
+from shared_dataloader.indicator_dataloader import data_importer
 
 
 def structure_data(data):
@@ -44,51 +45,6 @@ def cou_ind_miss(Data):
 
     return countyIndicator_missingness
 
-
-def data_importer(path=DATASETS_PATH):
-    """
-        Import csv files and restrructure the data into a country by indcator format. Model_type will be expanded upon.
-        precent: the most tolerable amount of missingness in a column for an indicator  accross the years
-        model_type: type of model data imported for
-        path: path on disk the raw data is stored
-        wb_data: indicatorData restructed to a (country x year) by Indicator Code format
-        indicatorMeta: indicator meta dataset (as is)
-        indicatorData: indicator data dataset (as is)
-        datasetMeta: dataset meta data (as is)
-    """
-    #
-
-    import os
-    cwd = os.getcwd()
-    logging.info("Current directory [%s]", cwd)
-    logging.info('loading %s', path + "indicatorMeta.csv")
-
-    try:
-        indicatorMeta = pd.read_csv(path + "indicatorMeta.csv")
-        logging.info('indicatorMeta.csv loaded %s', path + "indicatorMeta.csv")
-
-        datasetMeta = pd.read_csv(path + "datasetMeta.csv")
-
-        logging.info('datasetMeta.csv loaded')
-
-        indicatorData = pd.read_csv(path + "indicatorData.csv")
-
-        logging.info('indicatorData.csv loaded')
-    except Exception as e:
-        logging.exception("Read csv failed: " + str(e))
-
-    #### Remove rows with missing country or indicator names
-    indicatorData["Country/Indicator Code"] = indicatorData["Country Code"] + "-" + indicatorData["Indicator Code"]
-    indicatorData = indicatorData[indicatorData["Country/Indicator Code"].notna()].drop(
-        columns="Country/Indicator Code")
-
-    indicatorMeta = indicatorMeta[indicatorMeta["Indicator Code"].isin(indicatorData["Indicator Code"].values)]
-    indicatorMeta = indicatorMeta[indicatorMeta.Indicator.notna()]
-
-    datasetMeta = datasetMeta[datasetMeta["Dataset Code"].isin(indicatorMeta["Dataset"].values)]
-    datasetMeta = datasetMeta[datasetMeta["Dataset Name"].notna()]
-
-    return indicatorMeta, datasetMeta, indicatorData
 
 def kmeans_missing(X, n_clusters, max_iter=100):
     """Perform K-Means clustering on data with missing values.
