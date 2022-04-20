@@ -4,12 +4,14 @@ import time
 from fastapi import APIRouter, HTTPException
 from fastapi.params import Depends
 
+from common.constants import MAIN_ENDPOINT_TAG
 from common.errors import Error
 from models.twolvlImp.enums import Schema, Model, Interval, Interpolator
 from models.twolvlImp.definitions import TrainRequest, ModelResponse, PredictorListRequest
 from common.logger import logger
 from models.twolvlImp.model import query_and_train, get_indicator_list, get_predictor_list, get_target_years, \
-    dataset_options, dimension_options, check_year_validity, check_dataset_validity, check_target_validity, check_predictors_validity, \
+    dataset_options, dimension_options, check_year_validity, check_dataset_validity, check_target_validity, \
+    check_predictors_validity, \
     target_sample_size_requirement, predictor_sample_size_requirement
 
 router = APIRouter(
@@ -68,7 +70,6 @@ async def get_dimensions(target: str, target_year: str, dataset: str):
 
 @router.post('/predictors')
 async def get_predictors(args: PredictorListRequest):
-
     check_year_validity(args.target_year)
     check_dataset_validity(args.target_year, args.dataset)
     check_target_validity(args.target_year, args.dataset, args.target)
@@ -83,10 +84,10 @@ async def estimate_time(req: TrainRequest):
     if req.scheme == Schema.MANUAL:
         return 30
     else:
-        return 2*60
+        return 2 * 60
 
 
-@router.post('/predict', response_model=ModelResponse)
+@router.post('/predict', response_model=ModelResponse, openapi_extra={MAIN_ENDPOINT_TAG: True})
 async def train_validate_predict(req: TrainRequest):
     received_time = int(time.time())
     check_year_validity(req.target_year)
@@ -95,7 +96,6 @@ async def train_validate_predict(req: TrainRequest):
 
     logger.info("Request received %s", req.target)
 
-
     if req.scheme == Schema.MANUAL:
         manual_predictors = req.manual_predictors
         check_predictors_validity(req.target_year, req.manual_predictors)
@@ -103,7 +103,7 @@ async def train_validate_predict(req: TrainRequest):
     else:
         manual_predictors = req.number_predictor
 
-    avg_rmse, rmse, model_feature_importance, model_feature_names, prediction,correlation,feature_importance_pie = \
+    avg_rmse, rmse, model_feature_importance, model_feature_names, prediction, correlation, feature_importance_pie = \
         query_and_train(manual_predictors, req.target_year,
                         req.target,
                         req.interpolator,
@@ -112,7 +112,9 @@ async def train_validate_predict(req: TrainRequest):
                         req.model,
                         req.interval, None)
     logger.info("Return values %f %f", rmse, avg_rmse)
-    resp = ModelResponse(rmse_deviation=avg_rmse, rmse=rmse, model_feature_importance=model_feature_importance, model_feature_names=model_feature_names, prediction=prediction,correlation=correlation,feature_importance_pie=feature_importance_pie)
+    resp = ModelResponse(rmse_deviation=avg_rmse, rmse=rmse, model_feature_importance=model_feature_importance,
+                         model_feature_names=model_feature_names, prediction=prediction, correlation=correlation,
+                         feature_importance_pie=feature_importance_pie)
     time_consumed = int(time.time()) - received_time
     logger.info("Time Consumed(s)=%d %s", time_consumed, str(req))
     return resp

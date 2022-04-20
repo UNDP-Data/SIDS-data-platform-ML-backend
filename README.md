@@ -186,17 +186,21 @@ CI/CD implemented using Github Actions. [config file](./.github/workflows/main.y
    ```
     This endpoint will automatically add in to the swagger documentation as a new session.<br><br>
 
-    **IMPORTANT: Every model must have APIRouter object named as `router` and endpoint named `/predict`.**
-
-    Reasons for the above compulsory changes:
+    **IMPORTANT: Every model must have APIRouter object named as `router`.**
+    Reason for the above compulsory change:
     - `router` object used for the FastAPI app routing. 
       If you don't have a variable like this, your model will not visible on the swagger api and REST API endpoints 
-      will not available. All other functions and variables can rename and rearrange the way you want. 
-    - Currently, `/params` root endpoint returns the all models predict request definitions. System consider `/predict` 
-      endpoint as the main train and predict endpoint. If you don't add this endpoint, your model will not consider in `/params` request. 
-
+      will not available. All other functions and variables can rename and rearrange the way you want.
     
-3. Message definitions should be derived from `BaseDefinition`. It will  add `required_if` basic validation support to the definition.
+3.  Root scope `/params` endpoint returns the all models main endpoint definition. For that you need to add `openapi_extra={MAIN_ENDPOINT_TAG: True}` to the endpoint.
+    E.g.
+    ```
+    @router.post('/test_endpoint1', response_model=SampleResponse, openapi_extra={MAIN_ENDPOINT_TAG: True})
+    async def test_endpoint1(req: SampleRequest):
+        return SampleResponse(resp1="Test 1")
+    ```
+
+4. Message definitions should be derived from `BaseDefinition`. It will  add `required_if` basic validation support to the definition.
     For readability message definitions can move in to a separate file. 
 
     Add custom validators for message fields at the API level as below. 
@@ -209,12 +213,12 @@ CI/CD implemented using Github Actions. [config file](./.github/workflows/main.y
     please refer [pydantic validators](https://pydantic-docs.helpmanual.io/usage/validators/) for more information.
 
 
-4. Use `DATASET_PATH` environment variable for dataset loading.
-5. If you are shared same data loading across multiple models, create a data loader in `shared_dataloader` similar to [indicator_dataloader.py](./shared_dataloader/indicator_dataloader.py) and loaded data in the model as below code
+5. Use `DATASET_PATH` environment variable for dataset loading.
+6. If you are shared same data loading across multiple models, create a data loader in `shared_dataloader` similar to [indicator_dataloader.py](./shared_dataloader/indicator_dataloader.py) and loaded data in the model as below code
    ```
    indicatorMeta, datasetMeta, indicatorData = data_loader.load_data("<model service name>", data_importer())
    ```
-6. By default, newly added endpoint will route through default Kubernetes service.
+7. By default, newly added endpoint will route through default Kubernetes service.
 
 #### Add Model Endpoint as a New Kubernetes Service
 1. It is better to serve as a different service on following reasons

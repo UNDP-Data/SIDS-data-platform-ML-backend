@@ -9,3 +9,5 @@ SIDS = ['ASM', 'AIA', 'ATG', 'ABW', 'BHS', 'BRB', 'BLZ', 'BES', 'VGB', 'CPV', 'C
         'KNA', 'LCA', 'VCT', 'WSM', 'STP', 'SYC', 'SGP', 'SXM', 'SLB', 'SUR', 'TLS', 'TON', 'TTO', 'TUV', 'VIR', 'VUT']
 
 DATASETS_PATH = os.getenv("DATASET_PATH", "./datasets/")
+
+MAIN_ENDPOINT_TAG = "Main Endpoint"

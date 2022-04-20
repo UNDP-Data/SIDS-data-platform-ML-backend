@@ -4,6 +4,7 @@ from fastapi import APIRouter
 from pydantic import Field
 
 from common.base_definition import BaseDefinition
+from common.constants import MAIN_ENDPOINT_TAG
 
 
 class SampleRequest(BaseDefinition):
@@ -22,7 +23,7 @@ router = APIRouter(
 )
 
 
-@router.post('/predict', response_model=SampleResponse)
+@router.post('/test_endpoint1', response_model=SampleResponse, openapi_extra={MAIN_ENDPOINT_TAG: True})
 async def test_endpoint1(req: SampleRequest):
     return SampleResponse(resp1="Test 1")
 
