@@ -5,6 +5,8 @@ from enum import Enum
 from fastapi import APIRouter
 from fastapi.routing import APIRoute
 
+from common.constants import MAIN_ENDPOINT_TAG
+
 
 def save_file(filename, data):
     with open(filename, 'wb') as f:
@@ -74,13 +76,16 @@ def get_param_obj(model_name, router: APIRouter):
 
     route_map = {}
     r: APIRoute
+    main_route = None
     for r in router.routes:
         route_map[r.path.replace("/" + model_name, "")] = r
+        if r.openapi_extra is not None and MAIN_ENDPOINT_TAG in r.openapi_extra and r.openapi_extra[MAIN_ENDPOINT_TAG]:
+            main_route = r
 
-    if "/predict" in route_map:
-        print(route_map["/predict"])
-        main_route = route_map["/predict"]
+    # TODO: Curretly assuming there will be only one main endpoint in one model.
+    #  If this behvior needs to change, update the params endpoints data structure.
 
+    if main_route is not None:
         enum_map = {}
         for name, obj in inspect.getmembers(sys.modules["models." + model_name]):
             if inspect.isclass(obj) and issubclass(obj, Enum):
