@@ -336,3 +336,14 @@ https://sidsapi-basic.azurewebsites.net/docs#/
 https://ml-aks-ingress.eastus.cloudapp.azure.com/docs
 
 Kubernetes endpoint is faster than consumer plan endpoint.
+
+### Time Estimation Automation
+Currently, added a log in the two level imputation model and got a moving time average by following query.
+```
+ContainerLog
+| parse LogEntry with * "Time Consumed(s)=" Time " " other_params " scheme=<Schema." scheme_e ": '" scheme "'" remain_params
+| where LogEntry contains "Time Consumed(s)="
+| extend time_parsed    = toint(Time)
+| summarize avg(time_parsed) by scheme
+```
+Automated the process using [Azure Logic App](./deployment/TimeConsumptionAutomationTaskTemplate.json). Logic app generating a [JSON file](./time_consumption) in `dataset` Azure Storage Container.
