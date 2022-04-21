@@ -12,7 +12,7 @@ from common.logger import logger
 from models.twolvlImp.model import query_and_train, get_indicator_list, get_predictor_list, get_target_years, \
     dataset_options, dimension_options, check_year_validity, check_dataset_validity, check_target_validity, \
     check_predictors_validity, \
-    target_sample_size_requirement, predictor_sample_size_requirement
+    target_sample_size_requirement, predictor_sample_size_requirement,get_time_estimate
 
 router = APIRouter(
     prefix="/twolvlImp",
@@ -85,6 +85,14 @@ async def estimate_time(req: TrainRequest):
         return 30
     else:
         return 2 * 60
+
+@router.post('/logic_app_estimate')
+async def predict_time(req: TrainRequest):
+    check_year_validity(req.target_year)
+    check_dataset_validity(req.target_year, req.dataset)
+    check_target_validity(req.target_year, req.dataset, req.target)
+    return get_time_estimate(req.scheme)
+
 
 
 @router.post('/predict', response_model=ModelResponse, openapi_extra={MAIN_ENDPOINT_TAG: True})

@@ -333,7 +333,7 @@ def total_top_ranked(target_year,data,SIDS, percent,indicator_type="target"):
 indicatorMeta = None
 datasetMeta = None
 indicatorData = None
-
+time_estimate = None
 
 def load_dataset():
     global indicatorMeta, datasetMeta, indicatorData
@@ -341,6 +341,17 @@ def load_dataset():
 
 
 load_dataset()
+
+def load_time_estimate():
+    global time_estimate
+    try:
+        time_estimate = pd.read_json(DATASETS_PATH+"time_consumption")
+        time_estimate = pd.json_normalize(time_estimate['value'])
+        logging.info('time estimate loaded')
+    except Exception as e:
+        logging.exception("Read time_estimate failed: " + str(e))
+
+load_time_estimate()
 
 
 def dimension_options(target, target_year):
@@ -450,6 +461,13 @@ def target_sample_size_requirement():
 
 def predictor_sample_size_requirement():
     return math.ceil(indicatorData["Country Code"].unique().shape[0]* (1-measure/100))
+
+def get_time_estimate(scheme_name):
+    if scheme_name.name not in time_estimate.scheme_e.values:
+        return 2*60
+    else:
+        return time_estimate[time_estimate.scheme_e==scheme_name.name].avg_time_parsed.values[0]
+
 
 
 
