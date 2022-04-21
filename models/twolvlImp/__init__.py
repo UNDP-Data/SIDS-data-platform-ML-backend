@@ -81,16 +81,6 @@ async def estimate_time(req: TrainRequest):
     check_year_validity(req.target_year)
     check_dataset_validity(req.target_year, req.dataset)
     check_target_validity(req.target_year, req.dataset, req.target)
-    if req.scheme == Schema.MANUAL:
-        return 30
-    else:
-        return 2 * 60
-
-@router.post('/logic_app_estimate')
-async def predict_time(req: TrainRequest):
-    check_year_validity(req.target_year)
-    check_dataset_validity(req.target_year, req.dataset)
-    check_target_validity(req.target_year, req.dataset, req.target)
     return get_time_estimate(req.scheme)
 
 
