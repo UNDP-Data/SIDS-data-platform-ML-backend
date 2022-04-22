@@ -200,7 +200,18 @@ def model_trainer(X_train, X_test, y_train, seed, n_estimators, model_type, inte
         gs: trained GridSearchCV model
         best_model: the best model
     """
+    #X_train["sample_weight"]= X_train.reset_index()['Country Code'].apply(lambda x: 100 if x in SIDS else 1)
 
+    sample_weight = []#X_train.pop("sample_weight")
+    sids_weights = (X_train.index.isin(SIDS)).sum()
+    total = X_train.shape[0]
+
+    # Inverse class weighting for SIDS and non-SIDS
+    for i in X_train.index:
+        if i in SIDS:
+            sample_weight.append(1/sids_weights)
+        else:
+            sample_weight.append(1/(total-sids_weights))
     model_list = None
     if model_type == Model.all:
         model_list = [e for e in Model if e != Model.all]
@@ -247,9 +258,12 @@ def model_trainer(X_train, X_test, y_train, seed, n_estimators, model_type, inte
     n_jobs = 1
     if os.getenv("SEARCH_JOBS") is not None:
         n_jobs = int(os.getenv("SEARCH_JOBS"))
+    
 
     logging.info("Perform grid search using %d jobs", n_jobs)
-    gs = GridSearchCV(pipeline, params, cv=num_folds, n_jobs=n_jobs, scoring=scoring, refit=True).fit(X_train, y_train)
+
+    kwargs = {pipeline.steps[-1][0] + '__sample_weight': sample_weight}
+    gs = GridSearchCV(pipeline, params, cv=num_folds, n_jobs=n_jobs, scoring=scoring, refit=True).fit(X_train, y_train,**kwargs)
     rmse = np.sqrt(-gs.best_score_)
 
     best_model = gs.best_estimator_["regressor"]
