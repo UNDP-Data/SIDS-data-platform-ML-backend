@@ -503,6 +503,7 @@ def query_and_train(manual_predictors, target_year, target, interpolator, scheme
     # data for pie chart for feature importance 
     features = indicatorMeta[indicatorMeta["Indicator Code"].isin(X_train.columns)]
     feature_importance_pie =pd.DataFrame(data={"category":features.Category.values,"value":best_model.feature_importances_}).groupby("category").sum().reset_index().to_dict(orient="list")
-
-    return (
-                   rmse / y_train.mean()).item(), rmse.item(), best_model.feature_importances_.tolist(), best_model.feature_names_in_.tolist(), prediction,correlation,feature_importance_pie
+    SI_index = rmse / y_train.mean()
+    if ((SI_index >1) | (SI_index<0)):
+        SI_index= rmse / (y_train.max()-y_train.min())
+    return SI_index.item(), rmse.item(), best_model.feature_importances_.tolist(), best_model.feature_names_in_.tolist(), prediction,correlation,feature_importance_pie
