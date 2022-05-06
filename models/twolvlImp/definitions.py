@@ -34,6 +34,7 @@ class TrainRequest(BaseDefinition):
 
 
 class ModelResponse(BaseDefinition):
+    sample_size:Optional[float] = Field(..., description="number of samples used for training")
     rmse_deviation: Optional[float] = Field(..., description="Root-mean-square deviation")
     rmse: Optional[float] = Field(..., description="Root-mean-square deviation")
     model_feature_importance: Optional[List[float]]
