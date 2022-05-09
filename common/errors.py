@@ -8,6 +8,8 @@ class Error(Enum):
                       "type": "value_error"}
     INVALID_PREDICTOR = {"msg": "Invalid predictor/s {}. Please try /twolvlImp/predictors endpoint "
                                 "for supported values", "type": "value_error"}
+    INVALID_COUNTRY= {"msg": "Invalid country {}. Please try /statimpute/get_countries endpoint "
+                            "for supported values", "type": "value_error"}
 
     def format(self, *argv):
         v = self
