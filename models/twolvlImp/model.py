@@ -27,10 +27,10 @@ from shared_dataloader.indicator_dataloader import data_importer
 seed = 7
 
 #Maximum percentage of missingness to consider in target (target threshold) 
-percent = 90 
+percent = 80 
 
 #Maximum number of missingess to consider in predictors (predictor threshold)
-measure = 50
+measure = 30
 
 supported_years = [str(x) for x in list(range(2000, 2020))]
 Datasets = {}
@@ -77,13 +77,10 @@ def preprocessing(data, target, target_year, interpolator, SIDS, percent=30):
     y_test = X_test.pop(target)
 
     # Find how much missing values are there for each indicator
-    #rank = missingness(X_train)
+    rank = missingness(X_train)
 
     # interpolation for indcators missing less than percent% using KNN imputer
-    #most_complete = rank[rank.percent_missing < percent]["column_name"].values
-    #most_complete = load_predictos(target_year)#[target_year]
-    most_complete = sids_top_ranked(target_year,indicatorData,SIDS, measure,indicator_type="predictor")
-    most_complete = np.delete(most_complete, np.where(most_complete == target))
+    most_complete = rank[rank.percent_missing < percent]["column_name"].values
 
     X_train = X_train[most_complete]
     X_test = X_test[most_complete]
@@ -372,7 +369,7 @@ load_time_estimate()
 
 
 def dimension_options(target, target_year):
-    top_ranked = sids_top_ranked(target_year,indicatorData,SIDS, percent)
+    top_ranked = total_top_ranked(target_year,indicatorData,SIDS, percent)
     codes = indicatorMeta[indicatorMeta["Indicator"] == target][["Indicator Code", "Dimension"]]
     codes = codes[codes["Indicator Code"].isin(top_ranked)]
     return [{'label': codes.loc[i, "Dimension"], 'value': codes.loc[i, "Indicator Code"]} for i in codes.index]
@@ -390,7 +387,7 @@ def dataset_options(target_year):
     global Datasets
     if target_year not in Datasets:
         logging.info("Dataset does not found in the cache for year %s", target_year)
-        top_ranked = sids_top_ranked(target_year,indicatorData,SIDS, percent)
+        top_ranked = total_top_ranked(target_year,indicatorData,SIDS, percent)
         Datasets[target_year] = np.unique(indicatorMeta[indicatorMeta["Indicator Code"].isin(top_ranked)].Dataset.values)
     data_list = {}
     for i in Datasets[target_year]:
@@ -412,7 +409,7 @@ def check_year_validity(year):
 def load_predictos(target_year: str):
     global Predictor_list
     if target_year not in Predictor_list:
-        top_ranked = sids_top_ranked(target_year,indicatorData,SIDS, measure,indicator_type="predictor")
+        top_ranked = total_top_ranked(target_year,indicatorData,SIDS, measure,indicator_type="predictor")
         Predictor_list[target_year] = top_ranked
 
 
@@ -461,7 +458,7 @@ def load_indicator(target_year: str, dataset: str):
     global Targets_top_ranked
     if key not in Targets_top_ranked:
         logging.info("Indicator list does not found in the cache for key %s", key)
-        Targets_top_ranked[key] = sids_top_ranked(target_year,indicatorData,SIDS, percent)
+        Targets_top_ranked[key] = total_top_ranked(target_year,indicatorData,SIDS, percent)
 
 
 
@@ -509,4 +506,4 @@ def query_and_train(manual_predictors, target_year, target, interpolator, scheme
     SI_index = rmse / y_train.mean()
     if ((SI_index >1) | (SI_index<0)):
         SI_index= rmse / (y_train.max()-y_train.min())
-    return X_train.shape[0],SI_index.item(), rmse.item(), best_model.feature_importances_.tolist(), best_model.feature_names_in_.tolist(), prediction,correlation,feature_importance_pie
+    return SI_index.item(), rmse.item(), best_model.feature_importances_.tolist(), best_model.feature_names_in_.tolist(), prediction,correlation,feature_importance_pie
