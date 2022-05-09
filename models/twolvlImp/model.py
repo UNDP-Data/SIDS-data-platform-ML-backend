@@ -490,7 +490,7 @@ def query_and_train(manual_predictors, target_year, target, interpolator, scheme
     logging.info('Data set loaded')
     # Train test (for prediction not validation) split
     X_train, X_test, y_train = preprocessing(data=indicatorData, target=target, target_year=target_year,
-                                             interpolator=interpolator, SIDS=SIDS, percent=percent)
+                                             interpolator=interpolator, SIDS=SIDS, percent=measure)
 
     logging.info('Data preprocessed')
     # Dimension reduction based on scheme
