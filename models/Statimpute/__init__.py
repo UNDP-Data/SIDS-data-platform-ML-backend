@@ -21,7 +21,7 @@ class statRequest(BaseDefinition):
     direction: str = Field(..., title="method for timeseries interpolation in time (forward, backward or both)", example='both') #maybe make optional
     d: int = Field(None, title="order of the polynomials (1,2 or 3)",
                                                    example=1, req_endpoint="/impute",
-                                                   required_if=[{"method": "spline","method":"polynomial"}])
+                                                   required_if=[{"method": "spline"},{"method":"polynomial"}])
 class statResponse(BaseDefinition):
     missing_years: Optional[List[str]] = Field(..., description="list with the years that were imputed")
     imputed_series: Optional[dict] = Field(..., description="dict with the series of years and values")
