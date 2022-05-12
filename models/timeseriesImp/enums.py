@@ -16,7 +16,7 @@ class Model(Enum):
     xgbr = "XGBoost Regressor"
     lgbmr ="LGBM Regressor"
     cat = "CatBoostRegressor"
-    Ridge="Ridge regressor"
+    #Ridge="Ridge regressor"
 
 
     all='Best Model'
