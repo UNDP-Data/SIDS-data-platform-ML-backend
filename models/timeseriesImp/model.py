@@ -166,7 +166,7 @@ def model_trainer(X_train, X_test, y_train, seed, n_estimators, model_type, inte
     model_instances = []
     params = []
 
-    num_folds = 5  # Hard coded
+    num_folds = min(5,X_train.shape[0])  # Hard coded
     scoring = 'neg_mean_squared_error'
     if Model.rfr in model_list:
         clf1 = RandomForestRegressor(random_state=seed)
@@ -198,10 +198,10 @@ def model_trainer(X_train, X_test, y_train, seed, n_estimators, model_type, inte
         params.append(param3)
 
     if Model.esvr in model_list:
-        clf4 = SVR('linear')
+        clf4 = SVR(kernel='linear')
         param4 = {}
-        param4['degree'] = [2,3,4]
-        param4['C'] = [1, 2, 3]  # Hard coded
+        #param4['degree'] = [2,3,4]
+        #param4['C'] = [1, 2, 3]  # Hard coded
         param4['regressor'] = [clf4]
         model_instances.append(clf4)
         params.append(param4)
@@ -209,8 +209,8 @@ def model_trainer(X_train, X_test, y_train, seed, n_estimators, model_type, inte
     if Model.nusvr in model_list:
         clf5 = NuSVR(kernel='linear')
         param5 = {}
-        param5['degree'] = [2,3,4]
-        param5['C'] = [1, 2, 3]  # Hard coded
+        #param5['degree'] = [2,3,4]
+        #param5['C'] = [1, 2, 3]  # Hard coded
         param5['regressor'] = [clf5]
         model_instances.append(clf5)
         params.append(param5)
@@ -219,7 +219,7 @@ def model_trainer(X_train, X_test, y_train, seed, n_estimators, model_type, inte
         clf6 = SGDRegressor()
         param6 = {}
         param6['penalty'] =['l2', 'l1', 'elasticnet']
-        param6['alpha'] = [0.0001,0.001,0.01,0.1]
+        #param6['alpha'] = [0.0001,0.001,0.01,0.1]
         param6['regressor'] = [clf6]
         model_instances.append(clf6)
         params.append(param6)
@@ -245,8 +245,8 @@ def model_trainer(X_train, X_test, y_train, seed, n_estimators, model_type, inte
     if Model.cat in model_list:
         clf9 = CatBoostRegressor(random_state=seed)
         param9 = {}
-        param9['regressor__n_estimators'] = [n_estimators]
-        param9['regressor__max_depth'] = [5, 10, 20, 100, None]  # Hard coded
+        #param9['regressor__n_estimators'] = [n_estimators]
+        param9['regressor__max_depth'] = [5, 10]  # Hard coded
 
         param9['regressor'] = [clf9]
         model_instances.append(clf9)
