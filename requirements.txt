@@ -10,3 +10,6 @@ pca
 python-multipart
 requests
 kmodes
+xgboost
+lightgbm
+catboost
