@@ -97,7 +97,7 @@ def preprocessing(ind_data, predictors,target_year,target):
 
     window_counter =1
     year = target_year
-    while (year-3) > min(2000,target_year-15):
+    while (year-3) > min(2000,target_year-15): # hard coded
 
         sub = data.loc(axis=1)[range(year-3,year)]
 
@@ -122,7 +122,7 @@ def preprocessing(ind_data, predictors,target_year,target):
         target_sub.set_index('window',append=True,inplace=True)
         restructured_target = pd.concat([restructured_target,target_sub])
         
-        year = year-3
+        year = year-1
     
     restructured_data.dropna(axis=0,inplace=True)
 
