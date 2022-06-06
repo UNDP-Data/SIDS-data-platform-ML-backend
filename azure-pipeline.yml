@@ -1,0 +1,100 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- main
+
+variables:
+  - name: imageRepository
+    value: 'sidmlbackend'
+  - name: tag
+    value: '$(Build.BuildId)'
+  - name: namespace
+    value: 'ml-backend'
+  - name: vmImageName
+    value: 'ubuntu-latest'
+  - name: registryUrl
+    value: 'acrmlbackend.azurecr.io'
+
+stages:
+- stage: Build
+  displayName: Build stage
+  jobs:  
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: Docker@2
+      displayName: BuildImage
+      inputs:
+        containerRegistry: 'DPContainerReg'
+        repository: '$(imageRepository)'
+        command: 'build'
+        Dockerfile: 'Dockerfile'
+        tags: '$(tag)'
+    - task: Docker@2
+      displayName: PushImage
+      inputs:
+        containerRegistry: 'DPContainerReg'
+        repository: '$(imageRepository)'
+        command: 'push'
+        Dockerfile: 'Dockerfile'
+        tags: '$(tag)'
+    - task: PublishPipelineArtifact@1
+      displayName: Publish yaml pipeline artifact
+      inputs:
+        targetPath: '$(Build.SourcesDirectory)/manifest/sidsbackend-dev.yml'
+        artifact: 'sidsbackend'
+        publishLocation: 'pipeline'
+- stage: DeployDev
+  displayName: DeployDev
+  dependsOn: Build
+  jobs:
+  - deployment: DeployDev
+    condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
+    displayName: DeployDev
+    pool:
+      vmImage: $(vmImageName)
+    environment: 'DevStage'
+    variables:
+      - name: ACRRepoUrl
+        value: $(ACRRepoUrl)
+      - name: ACRTag
+        value: $(tag)
+      - name: namespace
+        value: $(namespace)
+      - name: containerName
+        value: 'datasets'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              buildType: 'current'
+              artifactName: 'sidsbackend'
+              targetPath: '$(Pipeline.Workspace)'
+          - task: replacetokens@4
+            displayName: update Manifest
+            inputs:
+              rootDirectory: '$(Pipeline.Workspace)'
+              targetFiles: 'sidsbackend-dev.yml'
+              encoding: 'auto'
+              tokenPattern: 'default'
+              writeBOM: false
+              actionOnMissing: 'warn'
+              keepToken: false
+              useLegacyPattern: false
+              enableTransforms: false
+              enableTelemetry: true
+          - task: KubernetesManifest@0
+            displayName: Kube - apply the app manifest
+            inputs:
+              action: 'deploy'
+              kubernetesServiceConnection: 'DPKube-Dev'
+              namespace: '$(namespace)'
+              manifests: '$(Pipeline.Workspace)/sidsbackend-dev.yml'
+              containers: '$(ACRRepoUrl)/$(imageRepository):$(tag)'

@@ -117,3 +117,10 @@ resource "helm_release" "nginx_ingress" {
   namespace = var.appNamespace
 
 }
+
+resource "helm_release" "traefik_ingress" {
+  name       = "traefik-ingress-controller"
+  repository = "https://helm.traefik.io/traefik"
+  chart      = "traefik"
+  namespace = var.appNamespace
+}
