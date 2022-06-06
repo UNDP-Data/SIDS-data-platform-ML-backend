@@ -9,7 +9,7 @@ module "dev_cluster" {
     resourceGrp = "ml-backend-group"
     clusterNodeCount = "1"
     clusterMinNodeCount = "1"
-    clusterMaxNodeCount = "3"
+    clusterMaxNodeCount = "4"
     clusterNodeSize = "standard_d2_v2"
     appNamespace = "ml-app"
     appName = "sidmlbackend"
