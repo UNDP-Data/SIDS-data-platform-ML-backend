@@ -2,11 +2,10 @@
 # the system.
 import os
 
-SIDS = ['ASM', 'AIA', 'ATG', 'ABW', 'BHS', 'BRB', 'BLZ', 'BES', 'VGB', 'CPV', 'COM', 'COK', 'CUB', 'CUW', 'DMA', 'DOM',
-        'FJI', 'PYF',
-        'GRD', 'GUM', 'GNB', 'GUY', 'HTI', 'JAM', 'KIR', 'MDV', 'MHL', 'MUS', 'FSM', 'MSR', 'NRU', 'NCL', 'NIU', 'MNP',
-        'PLW', 'PNG', 'PRI',
-        'KNA', 'LCA', 'VCT', 'WSM', 'STP', 'SYC', 'SGP', 'SXM', 'SLB', 'SUR', 'TLS', 'TON', 'TTO', 'TUV', 'VIR', 'VUT']
+SIDS = ['ATG','ABW', 'BHS', 'BMU', 'BHR', 'BRB', 'BLZ', 'VGB', 'CPV', 'CYM', 'COM', 'CUB', 'CUW', 'DMA', 'DOM', 'FJI',
+ 'GRD', 'GNB', 'GUY', 'HTI', 'JAM', 'KIR', 'MDV', 'MHL', 'MUS', 'FSM', 'NRU', 'PLW', 'PNG', 'WSM', 'STP', 'SYC',
+ 'SGP', 'SXM', 'SLB', 'KNA', 'VCT', 'LCA', 'SUR', 'TLS', 'TTO', 'TON', 'TUV', 'TCA', 'VUT', 'AIA', 'COK', 'MSR',
+ 'TKL', 'NIU']
 
 DATASETS_PATH = os.getenv("DATASET_PATH", "./datasets/")
 
