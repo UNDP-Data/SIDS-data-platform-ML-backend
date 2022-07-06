@@ -314,7 +314,7 @@ def model_trainer(X_train, X_test, y_train, seed, n_estimators, model_type, inte
 
     # Predict for SIDS countries with missing values
     prediction = prediction[prediction.index.isin(SIDS)]
-    prediction = prediction.reset_index().rename(columns={"index": "country"}).to_dict(orient='list')
+    prediction = prediction.reset_index().rename(columns={"index": "country"})#.to_dict(orient='list')
     #################### Prediction dataframe and best_model instance are the final results of the ML################
 
     return prediction, rmse, gs, best_model
@@ -341,6 +341,99 @@ def total_top_ranked(target_year,data,SIDS, percent,indicator_type="target"):
     else:
         top_ranked = rank[(rank.percent_missing < percent)]["column_name"].values
     return top_ranked
+
+def replacement(target,year, ind_data, ind_meta, sids, pred):
+    idx= pd.IndexSlice
+    subset_data = ind_data[ind_data["Indicator Code"]==target][["Country Code","Indicator Code",str(year)]].set_index(["Country Code","Indicator Code"]).stack(dropna=False).unstack("Indicator Code")
+    subset_data = subset_data.loc[idx[sids,:],:]
+    sub_pred= pred
+    try:
+        assert subset_data.isna().sum().sum() > 0
+    except:
+        print("no missing data found")
+    results = subset_data.copy()
+    lower = subset_data.copy()                                                                                                                                  
+    upper = subset_data.copy()                                                                                                                                 
+    for i in subset_data.index:
+                for j in subset_data.columns:
+                    value = subset_data.loc[i,j]
+                    if np.isnan(value):
+
+                        results.loc[i,j] = sub_pred[(sub_pred["Country Code"]==i[0])].prediction.values[0]#sub_data.loc[i,j]
+                        lower.loc[i,j] = sub_pred[(sub_pred["Country Code"]==i[0])].lower.values[0]
+                        upper.loc[i,j] = sub_pred[(sub_pred["Country Code"]==i[0])].upper.values[0]
+                                                                                                                                  
+                    else:
+                        lower.loc[i,j] = np.nan
+                        upper.loc[i,j] = np.nan
+    for i in np.unique(pred["Country Code"]).tolist():
+        try:
+            assert i in results.index.levels[0], f"cannot find "+ i + " for year " + str(year)
+        except:
+            missed = pred[(pred["Country Code"]==i)]
+            p = pd.DataFrame(data = [missed.prediction.values], columns=[target], index=[(i,year)])
+            l = pd.DataFrame(data = [missed.lower.values], columns=[target], index=[(i,year)])
+            u = pd.DataFrame(data = [missed.upper.values], columns=[target], index=[(i,year)])
+            results=pd.concat([results,p])
+            lower=pd.concat([lower,l])
+            upper=pd.concat([upper,u])
+    return results,lower,upper                                                                  
+
+def processMLData(result,lower,upper,featureImportancesDf,year,target,cor,rmse,rmse_deviation):
+    predictionsDf = result.reset_index().rename(columns={"level_1":"year"})
+    lowerIntervalsDf = lower.reset_index().rename(columns={"level_1":"year"})
+    upperIntervalsDf = upper.reset_index().rename(columns={"level_1":"year"})
+    yearValues={}
+    upperIntervals={}
+    lowerIntervals={}
+    indicatorJson={"data":{},"upperIntervals":{},"lowerIntervals":{},"categoryImportances":{},"featureImportances":{},
+                  "correlation":{},"rmse":{},"rmse_deviation":{}}
+
+    countries=predictionsDf["Country Code"].unique().tolist()
+    for country in countries:
+        value=predictionsDf[predictionsDf["Country Code"]==country][target].iloc[0]
+        lower=lowerIntervalsDf[lowerIntervalsDf["Country Code"]==country][target].iloc[0]
+        upper=upperIntervalsDf[upperIntervalsDf["Country Code"]==country][target].iloc[0]
+
+        if not pd.isna(value):
+            yearValues[country]=value
+
+        if not pd.isna(lower):
+            lowerIntervals[country]=lower
+
+        if not pd.isna(upper):
+            upperIntervals[country]=upper                       
+
+    indicatorFeaturesDf=featureImportancesDf[featureImportancesDf["predicted indicator"]==target]
+    features=indicatorFeaturesDf["feature indicator"].unique().tolist()
+    featureImportances={}
+    for feature in features:
+        featureImportance=indicatorFeaturesDf[indicatorFeaturesDf["feature indicator"]==feature]["feature importance"].iloc[0]
+        featureImportances[feature]=featureImportance
+
+    featuresMeta=indicatorMeta[indicatorMeta["Indicator Code"].isin(features)]
+    categories=featuresMeta["Category"].unique().tolist()
+
+    categoryImportances={}
+
+    for category in categories:
+        categoryTotal=0
+        for feature in featuresMeta[featuresMeta["Category"]==category]["Indicator Code"].unique().tolist():
+            importance=featureImportances[feature]
+            categoryTotal+=importance
+        categoryImportances[category]=categoryTotal
+
+    indicatorJson["data"][year]=yearValues
+    indicatorJson["upperIntervals"][year]=upperIntervals
+    indicatorJson["lowerIntervals"][year]=lowerIntervals
+    indicatorJson["featureImportances"][year]=featureImportances
+    indicatorJson["categoryImportances"][year]=categoryImportances
+    indicatorJson["correlation"][year] = cor
+    indicatorJson["rmse"][year] = rmse
+    indicatorJson["rmse_deviation"][year] = rmse_deviation
+    
+    return indicatorJson
+
 
 
 # Import data
@@ -501,9 +594,16 @@ def query_and_train(manual_predictors, target_year, target, interpolator, scheme
     prediction, rmse, gs, best_model = model_trainer(X_train, X_test, y_train, seed, estimators, model, interval)
     
     # data for pie chart for feature importance 
-    features = indicatorMeta[indicatorMeta["Indicator Code"].isin(X_train.columns)]
-    feature_importance_pie =pd.DataFrame(data={"category":features.Category.values,"value":best_model.feature_importances_}).groupby("category").sum().reset_index().to_dict(orient="list")
+    #features = indicatorMeta[indicatorMeta["Indicator Code"].isin(X_train.columns)]
+    #feature_importance_pie =pd.DataFrame(data={"category":features.Category.values,"value":best_model.feature_importances_}).groupby("category").sum().reset_index().to_dict(orient="list")
     SI_index = rmse / y_train.mean()
     if ((SI_index >1) | (SI_index<0)):
         SI_index= rmse / (y_train.max()-y_train.min())
-    return SI_index.item(), rmse.item(), best_model.feature_importances_.tolist(), best_model.feature_names_in_.tolist(), prediction,correlation,feature_importance_pie
+    
+    logging.info("initiate change of features")
+    importance = pd.DataFrame({"predicted indicator":[target]*len(best_model.feature_names_in_.tolist()),"feature indicator": best_model.feature_names_in_.tolist(),"feature importance":best_model.feature_importances_.tolist()})
+    results,lower,upper = replacement(target=target,year=target_year, ind_data=indicatorData, ind_meta=indicatorMeta, sids=SIDS, pred=prediction)
+    indicatorJson = processMLData(result=results,lower=lower,upper=upper,featureImportancesDf=importance,year=target_year,target=target,cor=correlation,rmse=rmse,rmse_deviation=SI_index)
+    return SI_index.item(), rmse.item(),indicatorJson
+    
+    #return SI_index.item(), rmse.item(), best_model.feature_importances_.tolist(), best_model.feature_names_in_.tolist(), prediction.to_dict(orient='list'),correlation,feature_importance_pie
