@@ -34,10 +34,11 @@ class TrainRequest(BaseDefinition):
 
 
 class ModelResponse(BaseDefinition):
-    rmse_deviation: Optional[float] = Field(..., description="Root-mean-square deviation")
-    rmse: Optional[float] = Field(..., description="Root-mean-square deviation")
-    model_feature_importance: Optional[List[float]]
-    model_feature_names: Optional[List[str]]
-    prediction: Optional[dict]
-    correlation: Optional[dict]
-    feature_importance_pie: Optional[dict]
+    #rmse_deviation: Optional[float] = Field(..., description="Root-mean-square deviation")
+    #rmse: Optional[float] = Field(..., description="Root-mean-square deviation")
+    #model_feature_importance: Optional[List[float]]
+    #model_feature_names: Optional[List[str]]
+    #prediction: Optional[dict]
+    #correlation: Optional[dict]
+    #feature_importance_pie: Optional[dict]
+    indicatorJson: Optional[dict]
