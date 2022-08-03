@@ -8,14 +8,11 @@ from sklearn.model_selection import GridSearchCV,cross_val_predict
 
 import os
 
-from sklearn.svm import SVR, NuSVR
-from sklearn.linear_model import SGDRegressor
 
 
 
 
-
-from models.timeseriesImp.enums import Model, Interval
+from models.timeseriesImp.enums import Model, Interval, Schema
 from common.constants import SIDS, DATASETS_PATH
 
 from shared_dataloader.indicator_dataloader import data_importer
@@ -70,8 +67,7 @@ def missing_years(indicator,ind_data):
     """
     sumb = ind_data.loc(axis=0)[pd.IndexSlice[indicator,]]
     sumb=sumb.isna().sum(axis=0).sort_values()/sumb.shape[0]
-    return sumb[sumb>0.5].index.shape[0]
-
+    return sumb[sumb>0.5].index.shape[0],sorted(sumb[sumb>0.5].index.tolist()), sorted(sumb[sumb<0.5].index.tolist())
 
 def validity_check(ind_data,sids_count,years_count):
 
@@ -95,12 +91,16 @@ def validity_check(ind_data,sids_count,years_count):
     except:
         ind_data = ind_data.set_index(["Indicator Code","Country Code"]).sort_index(axis=1).dropna(axis=0,how='all')
         indList = ind_data.index.levels[0]
+
+    if not ind_data.index.is_monotonic_increasing:
+        ind_data.sort_index(inplace = True)
+    #logging.info(indList[:10])
     for i in indList:
         indicators.append(i)
 
         try:
-            missing_sids_list.append(missing_sids(i))
-            c,my,y = missing_years(i)
+            missing_sids_list.append(missing_sids(i,ind_data))
+            c,my,y = missing_years(i,ind_data)
             missing_years_count_list.append(c)
             missing_years_list.append(my)
             actual_years_list.append(y)
@@ -110,6 +110,7 @@ def validity_check(ind_data,sids_count,years_count):
             actual_years_list.append([])
             missing_years_list.append([])
     validity = pd.DataFrame(data={"Indicator":indicators,"missing_sids":missing_sids_list,"missing_years_count":missing_years_count_list,"missing_years":missing_years_list, "available_years":actual_years_list})
+    #logging.info(validity.head(10))
     return validity[(validity.missing_sids<sids_count) &(validity.missing_years_count<(len(ind_data.columns)/years_count))]
 
 def preprocessing(ind_data, predictors,target_year,target):
@@ -148,6 +149,8 @@ def preprocessing(ind_data, predictors,target_year,target):
 
     window_counter =1
     year = target_year
+    #logging.info("data for preprocessing")
+    #logging.info(data)
     while (year-3) > min(2000,target_year-15): # hard coded
 
         sub = data.loc(axis=1)[range(year-3,year)]
@@ -349,19 +352,25 @@ def target_validity():
 def year_validity(target: str):
     global valid_targets
     years = valid_targets[valid_targets.Indicator ==target].available_years.values[0]
-    logging.info(years)
+    #logging.info(years)
     return years
 
-def train_predict(predictors, n_estimators, model_type,target,target_year,interval,ind_data=indicatorData):
-
+def train_predict(predictors,scheme, n_estimators, model_type,target,target_year,interval,ind_data=indicatorData):
+    
     data = ind_data.set_index(["Indicator Code","Country Code"]).sort_index(axis=1).dropna(axis=0,how='all')#.interpolate('linear')
 
     rename_names = dict()
     for i in data.columns:
         rename_names[i] = int(i)
-        
     data.rename(columns=rename_names,inplace=True)
-    X_train,X_test,y_train,sample_weight = preprocessing(data, predictors,target_year,target)
+
+    valid_predictors = validity_check(ind_data,n,m)
+    #logging.info(valid_predictors.Indicator.values.tolist())
+    if scheme == Schema.MANUAL:
+        X_train,X_test,y_train,sample_weight = preprocessing(data, predictors,target_year,target)
+    elif scheme == Schema.AUTO:
+        X_train,X_test,y_train,sample_weight = preprocessing(data, valid_predictors.Indicator.values.tolist(),target_year,target)
+
     seed = 7
     prediction, rmse, gs, best_model = model_trainer(X_train, X_test, y_train, seed, n_estimators, model_type, interval,sample_weight)
     try:
@@ -373,10 +382,13 @@ def train_predict(predictors, n_estimators, model_type,target,target_year,interv
 
     indicator_importance['predictor'] = indicator_importance["names"].apply(lambda x: x[0])
 
-    #indicator_importance.sort_values(["values"],inplace=True, ascending=False)
     importanceSummed = indicator_importance.groupby(['predictor']).sum()
-    importanceSorted = importanceSummed.reset_index().sort_values('values',ascending = False).head(10)
-    #indicator_importance = importanceSorted.sort_values(["year","target","values"], ascending=False)
+    if scheme == Schema.MANUAL:
+        importanceSorted = importanceSummed.reset_index().sort_values('values',ascending = False)
+    elif scheme == Schema.AUTO:
+        importanceSorted = importanceSummed.reset_index().sort_values('values',ascending = False).head(predictors)
+
+
     
     SI_index = rmse / y_train.mean()
     if ((SI_index >1) | (SI_index<0)):

@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from common.base_definition import BaseDefinition
 
 from models.timeseriesImp.model import  train_predict,predictor_validity,target_validity,year_validity
+from models.timeseriesImp.enums import Schema
 
 router = APIRouter(
     prefix="/timeseriesImp",
@@ -36,8 +37,10 @@ class TrainRequest(BaseDefinition):
                                                             'wdi2-SP.DYN.CBRT.IN',
                                                             'wdi2-NY.GDP.PCAP.CD',
                                                             'wdi-ER.FSH.CAPT.MT'], req_endpoint="/predictors")
-    #number_predictor: Optional[int] = Field(None, title="Number of predictors (for Automatic)", example=10,
-    #                                        required_if=[{"scheme": "AFS"}, {"scheme": "PCA"}])
+    number_predictor: Optional[int] = Field(None, title="Number of predictors (for Automatic)", example=10,
+                                            required_if=[{"scheme": "AUTO"}])
+    scheme: Schema = Field(..., title="Feature selection method selected by user", example=Schema.MANUAL.name)
+
     target_year: int = Field(..., title="The year under consideration", example=2010,req_endpoint="/target_years")
     target: str = Field(..., title="Indicator whose values will be imputed", example="wdi2-SE.PRM.ENRL.TC.ZS",
                         req_endpoint="/targets")
@@ -78,11 +81,16 @@ async def train_validate_predict(req: TrainRequest):
     #check_year_validity(req.target_year)
     #check_dataset_validity(req.target_year, req.dataset)
     #check_target_validity(req.target_year, req.dataset, req.target)
+    if req.scheme == Schema.MANUAL:
+        manual_predictors = req.manual_predictors
+        #check_predictors_validity(req.target_year, req.manual_predictors)
 
+    else:
+        manual_predictors = req.number_predictor
     logger.info("Request received %s", req.target)
 
     prediction,rmse, model_feature_importance, model_feature_names = \
-        train_predict(req.manual_predictors,req.estimators,req.model,req.target,req.target_year,req.interval)
+        train_predict(manual_predictors,req.scheme,req.estimators,req.model,req.target,req.target_year,req.interval)
 
     #logger.info("Return values %f %f", rmse, avg_rmse)
     resp = ModelResponse(rmse=rmse, model_feature_importance=model_feature_importance,
