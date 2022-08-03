@@ -138,14 +138,6 @@ def preprocessing(ind_data, predictors,target_year,target):
     
     """
 
-    #ind_data = ind_data.set_index(["Indicator Code","Country Code"]).sort_index(axis=1).dropna(axis=0,how='all')#.interpolate('linear')
-
-    #rename_names = dict()
-    #for i in ind_data.columns:
-    #    rename_names[i] = int(i)
-        
-    #ind_data.rename(columns=rename_names,inplace=True)
-
     data = series_extractor(indicator=predictors,ind_data=ind_data,method='linear',direction="both")
 
     restructured_data = pd.DataFrame()
@@ -376,7 +368,17 @@ def train_predict(predictors, n_estimators, model_type,target,target_year,interv
         feature_importance = best_model.coef_
     except:
         feature_importance = best_model.feature_importances_
+
+    indicator_importance = pd.DataFrame(data={"names":X_train.columns.tolist(), "values":feature_importance})
+
+    indicator_importance['predictor'] = indicator_importance["names"].apply(lambda x: x[0])
+
+    #indicator_importance.sort_values(["values"],inplace=True, ascending=False)
+    importanceSummed = indicator_importance.groupby(['predictor']).sum()
+    importanceSorted = importanceSummed.reset_index().sort_values('values',ascending = False).head(10)
+    #indicator_importance = importanceSorted.sort_values(["year","target","values"], ascending=False)
+    
     SI_index = rmse / y_train.mean()
     if ((SI_index >1) | (SI_index<0)):
         SI_index= rmse / (y_train.max()-y_train.min())
-    return prediction,SI_index, feature_importance.tolist(), X_train.columns.tolist()
+    return prediction,SI_index, importanceSorted["values"].values.tolist(),importanceSorted["predictor"].values.tolist() #feature_importance.tolist(), X_train.columns.tolist()
