@@ -197,61 +197,6 @@ def model_trainer(X_train, X_test, y_train, seed, n_estimators, model_type, inte
         model_instances.append(clf3)
         params.append(param3)
 
-    if Model.esvr in model_list:
-        clf4 = SVR(kernel='linear')
-        param4 = {}
-        #param4['degree'] = [2,3,4]
-        #param4['C'] = [1, 2, 3]  # Hard coded
-        param4['regressor'] = [clf4]
-        model_instances.append(clf4)
-        params.append(param4)
-    
-    if Model.nusvr in model_list:
-        clf5 = NuSVR(kernel='linear')
-        param5 = {}
-        #param5['degree'] = [2,3,4]
-        #param5['C'] = [1, 2, 3]  # Hard coded
-        param5['regressor'] = [clf5]
-        model_instances.append(clf5)
-        params.append(param5)
-    
-    if Model.sdg in model_list:
-        clf6 = SGDRegressor()
-        param6 = {}
-        param6['penalty'] =['l2', 'l1', 'elasticnet']
-        #param6['alpha'] = [0.0001,0.001,0.01,0.1]
-        param6['regressor'] = [clf6]
-        model_instances.append(clf6)
-        params.append(param6)
-
-    if Model.xgbr in model_list:
-        clf7 = XGBRegressor(random_state=seed,importance_type='weight')
-        param7 = {}
-        param7['regressor__n_estimators'] = [n_estimators]
-        param7['regressor__max_depth'] = [5, 10, 20, 100, None]  # Hard coded
-
-        param7['regressor'] = [clf7]
-        model_instances.append(clf7)
-        params.append(param7)
-    if Model.lgbmr in model_list:
-        clf8 = LGBMRegressor(random_state=seed)
-        param8 = {}
-        param8['regressor__n_estimators'] = [n_estimators]
-        param8['regressor__max_depth'] = [5, 10, 20, 100, None]  # Hard coded
-
-        param8['regressor'] = [clf8]
-        model_instances.append(clf8)
-        params.append(param8)
-    if Model.cat in model_list:
-        clf9 = CatBoostRegressor(random_state=seed)
-        param9 = {}
-        #param9['regressor__n_estimators'] = [n_estimators]
-        param9['regressor__max_depth'] = [5, 10]  # Hard coded
-
-        param9['regressor'] = [clf9]
-        model_instances.append(clf9)
-        params.append(param9)
-
 
     pipeline = Pipeline([('regressor', model_instances[0])])
 
@@ -364,4 +309,7 @@ def train_predict(predictors, n_estimators, model_type,target,target_year,interv
         feature_importance = best_model.coef_
     except:
         feature_importance = best_model.feature_importances_
-    return prediction,rmse.item(), feature_importance.tolist(), X_train.columns.tolist()
+    SI_index = rmse / y_train.mean()
+    if ((SI_index >1) | (SI_index<0)):
+        SI_index= rmse / (y_train.max()-y_train.min())
+    return prediction,SI_index, feature_importance.tolist(), X_train.columns.tolist()
