@@ -10,9 +10,7 @@ import os
 
 from sklearn.svm import SVR, NuSVR
 from sklearn.linear_model import SGDRegressor
-from xgboost import XGBRegressor
-from lightgbm import LGBMRegressor
-from catboost import Pool, CatBoostRegressor
+
 
 
 
@@ -26,12 +24,24 @@ from common.errors import Error
 from common.logger import logger
 from fastapi import HTTPException
 
-n= 10 #indicator cannot ignore more than this many sids countries
-m = 5 #indicator must have measurements for atleast 1/mth of the total number of years in the indicatorData
+n= 15 #indicator cannot ignore more than this many sids countries
+m = 2 #indicator must have measurements for atleast 1/mth of the total number of years in the indicatorData
 
 
 
 def series_extractor(indicator, ind_data,method,direction='both',d=1):
+    """
+        Interpolate ind_data using pandas interpolate method for filling missing timerseries data
+        Args:
+            indicator: indicator Code 
+            ind_data: indicatorData dataset
+            method: interpolation method. Options explained on https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.interpolate.html
+            direction: direction of filling missing values. explained onhttps://pandas.pydata.org/docs/reference/api/pandas.DataFrame.interpolate.html
+            d: order of polynomial for 'spline' and 'ploynomial' methods.
+        returns:
+            imp_data: interpolated indicatorData dataset for "indicator" and SIDS 
+    
+    """
     idx=pd.IndexSlice
     data = ind_data.loc[idx[indicator,SIDS],].copy()
     #missing = data.columns[data.isnull().any()].tolist()
@@ -47,45 +57,94 @@ def series_extractor(indicator, ind_data,method,direction='both',d=1):
 
 
 def missing_sids(indicator, ind_data):
+    """Calculates the number of SIDS that are never measured for this indicator"""
+
     return len(list(set(SIDS)-set(ind_data.loc(axis=0)[pd.IndexSlice[indicator,]].index)))
     
 def missing_years(indicator,ind_data):
+    """Calcuates the number of missing years for this indicator
+    returns:
+        missing years count 
+        missing years as list
+        actual years for which the indicator is observed
+    """
     sumb = ind_data.loc(axis=0)[pd.IndexSlice[indicator,]]
     sumb=sumb.isna().sum(axis=0).sort_values()/sumb.shape[0]
     return sumb[sumb>0.5].index.shape[0]
 
 
 def validity_check(ind_data,sids_count,years_count):
-    ind_data = ind_data.set_index(["Indicator Code","Country Code"]).sort_index(axis=1).dropna(axis=0,how='all')#.interpolate('linear')
+
+    """ Returns indicators which satisfy certain amount of non-missing data
+    Args:
+        ind_data: indicatorData dataset
+        sids_count: threshold determining number of SIDS that are never measured for an indicator
+        years_count: indicator must have measurements for atleast 1/year_count of the total number of years in the indicatorData
+    Returns:
+        dataframe with valid indicators according to the threshold in the input arguments
+    """
+    #ind_data = ind_data.set_index(["Indicator Code","Country Code"]).sort_index(axis=1).dropna(axis=0,how='all')#.interpolate('linear')
 
     indicators = []
     missing_sids_list = []
     missing_years_list = []
+    missing_years_count_list = []
     actual_years_list = []
-    for i in ind_data.index.levels[0]:
+    try:
+        indList = ind_data.index.levels[0]
+    except:
+        ind_data = ind_data.set_index(["Indicator Code","Country Code"]).sort_index(axis=1).dropna(axis=0,how='all')
+        indList = ind_data.index.levels[0]
+    for i in indList:
         indicators.append(i)
 
         try:
             missing_sids_list.append(missing_sids(i))
-            c,y = missing_years(i)
-            missing_years_list.append(c)
+            c,my,y = missing_years(i)
+            missing_years_count_list.append(c)
+            missing_years_list.append(my)
             actual_years_list.append(y)
         except:
             missing_sids_list.append(50)
-            missing_years_list.append(50)
+            missing_years_count_list.append(50)
             actual_years_list.append([])
-    validity = pd.DataFrame(data={"Indicator":indicators,"missing_sids":missing_sids_list,"missing_years":missing_years_list, "available_years":actual_years_list})
-    return validity[(validity.missing_sids<sids_count) &(validity.missing_years<(len(indicatorData.columns)/years_count))]
+            missing_years_list.append([])
+    validity = pd.DataFrame(data={"Indicator":indicators,"missing_sids":missing_sids_list,"missing_years_count":missing_years_count_list,"missing_years":missing_years_list, "available_years":actual_years_list})
+    return validity[(validity.missing_sids<sids_count) &(validity.missing_years_count<(len(ind_data.columns)/years_count))]
 
 def preprocessing(ind_data, predictors,target_year,target):
 
-    ind_data = ind_data.set_index(["Indicator Code","Country Code"]).sort_index(axis=1).dropna(axis=0,how='all')#.interpolate('linear')
+    """
+    Transform the ind_data dataframe into a (country, year) by (indicator Code) by  creating the window and lag features.
+    the sliced data frame is reshaped into an multi-index data frame where each row represents a country and target history (also called window) pair. Each predictor column, on the other hand, represents the historical information (also called lag) of the indicator.
+    In addition, sample weight is generated such that target history (windows) further away from the target year are given small weights to force the model to focus on the relationship between predictors and indicators close in time to the target year.
+    For e.g.: For window 2, lag 3 and target year =2010, the dataframe generated looks like (where the values are represented by the corresponding years)
+                      Indicator/predictor    target
+                      lag3 lag2 lag1
+    country1 window1  2007 2008 2009         2010
+             window2  2006 2007 2008         2009
+    country2 window1  2007 2008 2009         2010
+             window2  2006 2007 2008         2009
+    Args:
+        ind_data: indicatorData
+        predictors: list of predictors indicator codes
+        target_year: the target year under consideration for imputation
+        target: the indicator to be imputed
+    Returns:
+        X_train: subset of generated reshaped data where target is measured
+        X_test: subset of  generated reshaped data where target for target year is missing
+        y_train: X_train's corresponding target pandas series
+        sample_weight: pandas series with weights for the X_train observations/rows
+    
+    """
 
-    rename_names = dict()
-    for i in ind_data.columns:
-        rename_names[i] = int(i)
+    #ind_data = ind_data.set_index(["Indicator Code","Country Code"]).sort_index(axis=1).dropna(axis=0,how='all')#.interpolate('linear')
+
+    #rename_names = dict()
+    #for i in ind_data.columns:
+    #    rename_names[i] = int(i)
         
-    ind_data.rename(columns=rename_names,inplace=True)
+    #ind_data.rename(columns=rename_names,inplace=True)
 
     data = series_extractor(indicator=predictors,ind_data=ind_data,method='linear',direction="both")
 
@@ -289,7 +348,7 @@ def predictor_validity(target: str):
     return  predictor_list
 
 global valid_targets
-valid_targets = validity_check(indicatorData,n+5,m+5) #Temporary
+valid_targets = validity_check(indicatorData,50,1.25) #Temporary
 
 def target_validity():
     global valid_targets
@@ -302,7 +361,15 @@ def year_validity(target: str):
     return years
 
 def train_predict(predictors, n_estimators, model_type,target,target_year,interval,ind_data=indicatorData):
-    X_train,X_test,y_train,sample_weight = preprocessing(ind_data, predictors,target_year,target)
+
+    data = ind_data.set_index(["Indicator Code","Country Code"]).sort_index(axis=1).dropna(axis=0,how='all')#.interpolate('linear')
+
+    rename_names = dict()
+    for i in data.columns:
+        rename_names[i] = int(i)
+        
+    data.rename(columns=rename_names,inplace=True)
+    X_train,X_test,y_train,sample_weight = preprocessing(data, predictors,target_year,target)
     seed = 7
     prediction, rmse, gs, best_model = model_trainer(X_train, X_test, y_train, seed, n_estimators, model_type, interval,sample_weight)
     try:
