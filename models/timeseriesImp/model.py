@@ -162,26 +162,40 @@ def preprocessing(ind_data, predictors,target_year,target):
         sample_weight: pandas series with weights for the X_train observations/rows
     
     """
-
+    # Interpolate
     data = series_extractor(indicator=predictors,ind_data=ind_data,method='linear',direction="both")
 
+    # Create restructured dataframes
     restructured_data = pd.DataFrame()
 
     sample_weight = pd.DataFrame()
 
     restructured_target = pd.DataFrame()
 
+    # This is for reducing sampling weight the further we go back in time
     window_counter =1
+    
     year = target_year
     #logging.info("data for preprocessing")
     #logging.info(data)
     while (year-lag) > max(1970,target_year-window): # hard coded
-        #logging.info("predictor columns")
+        # Subset indicatorData for the 3 lag years
         sub = data.loc(axis=1)[range(year-3,year)]
-        #logging.info(sub.columns)
-        #if year == target_year:
-        #    logging.info(sub)
+        # Restructure subset dataframe
         sub = pd.DataFrame(data=sub.to_numpy(), index=sub.index,columns=["lag 3","lag 2","lag 1"]).unstack("Indicator Code").swaplevel(axis=1).sort_index(axis=1)
+        
+        # Find SIDS not present in the dataframe
+        sidsPresent = list(set(sub.index) & set(SIDS))
+        sidsAbsent = list(set(SIDS)-set(sidsPresent))
+
+        # Subset only SIDS countries
+        sub = sub.loc(axis=0)[sidsPresent]
+
+        # If there are SIDS countries not presesnt, add them as empty rows
+        if len(sidsAbsent) > 0:
+            sub = sub.reindex(sub.index.union(sidsAbsent))
+
+        # Add window to show which target year is the target from
         sub["window"] = year
         sub.set_index('window',append=True,inplace=True)
         # Here if a predictor is never measured for a SIDS country, it will be NaN. Temporary solution will be to fill it with a standard imputer (or remove the country which reduces the number of valid SIDS for imputation)
@@ -192,48 +206,47 @@ def preprocessing(ind_data, predictors,target_year,target):
         sub = pd.DataFrame(data=scaler.inverse_transform(imputer.transform(scaler.transform(sub)))
                         , columns=sub.columns,
                         index=sub.index)
-        #if year == target_year:
-        #    logging.info(sub)
-        
 
         restructured_data = pd.concat([restructured_data,sub])
+        
+        # Create the recency bias sample weights
         weight= 1/window_counter
         sample_weight = pd.concat([sample_weight,pd.DataFrame(data=[weight]*sub.shape[0],index=sub.index,columns=["weight"])])
         window_counter = window_counter+1
         idx=pd.IndexSlice
         
-        
+        # subset the target variable from the indicatorData
         target_data = ind_data.loc[idx[target,SIDS],].copy()
+        # subset for the specific year under consideration (window year)
         target_sub = target_data.loc(axis=1)[year]
-        #logging.info("target columns")
-        #logging.info(target_sub.name)
-        target_sub = pd.DataFrame(data=target_sub.to_numpy(), index=target_sub.index,columns=["target"]).unstack("Indicator Code").swaplevel(axis=1).sort_index(axis=1)
-    #     for i in sub.index:
-    #         if i not in target_sub.index:
-    #             target_sub.loc[i,target_sub.columns[0]] = [np.nan]
 
-    #    if year == target_year:
-    #        logging.info(target_sub)
-            
+        # reshape subsetted data frame
+        target_sub = pd.DataFrame(data=target_sub.to_numpy(), index=target_sub.index,columns=["target"]).unstack("Indicator Code").swaplevel(axis=1).sort_index(axis=1)
+        
+        # Add window to show which target year is the target from (important for merging later)
         target_sub["window"] = year
         target_sub.set_index('window',append=True,inplace=True)
         restructured_target = pd.concat([restructured_target,target_sub])
         
+        # Shift the window by one year
         year = year-1
     
-    restructured_data.dropna(axis=0,inplace=True)
-    #logging.info(restructured_data[restructured_data.isna().any(axis=1)].index)
-    training_data = restructured_data.merge(restructured_target,how='right',left_index=True,right_index=True)
+    #restructured_data.dropna(axis=0,inplace=True)
+    # Merge based on predictor dataframe (here note that retructured_data has all the SIDS for all years in its index )
+    training_data = restructured_data.merge(restructured_target,how='left',left_index=True,right_index=True)
     training_data = training_data.merge(sample_weight,how='left',left_index=True,right_index=True)
     #logging.info(training_data[training_data.isna().any(axis=1)].index)
+    # Split into training and prediction based on missingness in target
     X_train= training_data[training_data[(target,"target")].notna()]
     X_test = training_data[training_data[(target,"target")].isna()]
     X_test.pop("weight")
+    # Pop training sample wight
     sample_weight = X_train.pop("weight")
     X_test.pop((target,"target"))
     y_train = X_train.pop((target,"target"))
+    # Subset prediction data for target_year only (no need to return non target years to frontend)
     X_test = X_test.loc(axis=0)[pd.IndexSlice[:,target_year]]
-    #logging.info(X_test.index)
+    logging.info(X_test.index)
     return X_train,X_test,y_train,sample_weight
 
 def model_trainer(X_train, X_test, y_train, seed, n_estimators, model_type, interval,sample_weight):
