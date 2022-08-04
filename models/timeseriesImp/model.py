@@ -5,11 +5,13 @@ import logging
 from sklearn.ensemble import ExtraTreesRegressor, RandomForestRegressor, GradientBoostingRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV,cross_val_predict
-
+from sklearn.impute import KNNImputer
+from sklearn.preprocessing import MinMaxScaler
 import os
 
 
-
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 from models.timeseriesImp.enums import Model, Interval, Schema
@@ -126,6 +128,9 @@ def preprocessing(ind_data, predictors,target_year,target):
              window2  2006 2007 2008         2009
     country2 window1  2007 2008 2009         2010
              window2  2006 2007 2008         2009
+    
+    Bug:  Here if a predictor is never measured for a particular SIDS country, it will be NaN for all the lags. The temporary solution will be to fill it with a standard imputer (or remove the country which reduces the number of valid SIDS for imputation)
+ 
     Args:
         ind_data: indicatorData
         predictors: list of predictors indicator codes
@@ -152,26 +157,43 @@ def preprocessing(ind_data, predictors,target_year,target):
     #logging.info("data for preprocessing")
     #logging.info(data)
     while (year-3) > min(2000,target_year-15): # hard coded
-
+        #logging.info("predictor columns")
         sub = data.loc(axis=1)[range(year-3,year)]
-
+        #logging.info(sub.columns)
+        if year == target_year:
+            logging.info(sub)
         sub = pd.DataFrame(data=sub.to_numpy(), index=sub.index,columns=["lag 3","lag 2","lag 1"]).unstack("Indicator Code").swaplevel(axis=1).sort_index(axis=1)
         sub["window"] = year
         sub.set_index('window',append=True,inplace=True)
-
+        # Here if a predictor is never measured for a SIDS country, it will be NaN. Temporary solution will be to fill it with a standard imputer (or remove the country which reduces the number of valid SIDS for imputation)
+        scaler = MinMaxScaler()
+        imputer = KNNImputer(n_neighbors=5)  # Hard Coded
+        scaler.fit(sub)
+        imputer.fit(scaler.transform(sub))
+        sub = pd.DataFrame(data=scaler.inverse_transform(imputer.transform(scaler.transform(sub)))
+                        , columns=sub.columns,
+                        index=sub.index)
+        if year == target_year:
+            logging.info(sub)
+        
 
         restructured_data = pd.concat([restructured_data,sub])
         weight= 1/window_counter
         sample_weight = pd.concat([sample_weight,pd.DataFrame(data=[weight]*sub.shape[0],index=sub.index,columns=["weight"])])
         window_counter = window_counter+1
         idx=pd.IndexSlice
-        target_data = ind_data.loc[idx[target,SIDS],].copy()
         
+        
+        target_data = ind_data.loc[idx[target,SIDS],].copy()
         target_sub = target_data.loc(axis=1)[year]
+        #logging.info("target columns")
+        #logging.info(target_sub.name)
         target_sub = pd.DataFrame(data=target_sub.to_numpy(), index=target_sub.index,columns=["target"]).unstack("Indicator Code").swaplevel(axis=1).sort_index(axis=1)
     #     for i in sub.index:
     #         if i not in target_sub.index:
     #             target_sub.loc[i,target_sub.columns[0]] = [np.nan]
+        #if year == target_year:
+        #    logging.info(target_sub)
         target_sub["window"] = year
         target_sub.set_index('window',append=True,inplace=True)
         restructured_target = pd.concat([restructured_target,target_sub])
@@ -179,9 +201,10 @@ def preprocessing(ind_data, predictors,target_year,target):
         year = year-1
     
     restructured_data.dropna(axis=0,inplace=True)
-
-    training_data = restructured_data.merge(restructured_target,how='left',left_index=True,right_index=True)
+    #logging.info(restructured_data[restructured_data.isna().any(axis=1)].index)
+    training_data = restructured_data.merge(restructured_target,how='right',left_index=True,right_index=True)
     training_data = training_data.merge(sample_weight,how='left',left_index=True,right_index=True)
+    #logging.info(training_data[training_data.isna().any(axis=1)].index)
     X_train= training_data[training_data[(target,"target")].notna()]
     X_test = training_data[training_data[(target,"target")].isna()]
     X_test.pop("weight")
@@ -189,7 +212,7 @@ def preprocessing(ind_data, predictors,target_year,target):
     X_test.pop((target,"target"))
     y_train = X_train.pop((target,"target"))
     X_test = X_test.loc(axis=0)[pd.IndexSlice[:,target_year]]
-
+    #logging.info(X_test.index)
     return X_train,X_test,y_train,sample_weight
 
 def model_trainer(X_train, X_test, y_train, seed, n_estimators, model_type, interval,sample_weight):
@@ -216,7 +239,7 @@ def model_trainer(X_train, X_test, y_train, seed, n_estimators, model_type, inte
     else:
         model_list = [model_type]
 
-    logging.info(model_list)
+    #logging.info(model_list)
     model_instances = []
     params = []
 
