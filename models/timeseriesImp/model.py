@@ -26,7 +26,22 @@ from fastapi import HTTPException
 n= 15 #indicator cannot ignore more than this many sids countries
 m = 2 #indicator must have measurements for atleast 1/mth of the total number of years in the indicatorData
 
+ntarget = 50 #target cannot ignore more than this many sids countries
+mtarget = 1.25 #target must have measurements for atleast 1/mth of the total number of years in the indicatorData
 
+window = 15 # How much past history of the target to consider, measured in years (size of window in proprocessing)
+
+lag = 3 # How much past history of the predictors to consider for each window, measured in years (size of lag in proprocessing)
+
+
+def intColumn(indData):
+    data = indData.set_index(["Indicator Code","Country Code"]).sort_index(axis=1).dropna(axis=0,how='all')#.interpolate('linear')
+
+    rename_names = dict()
+    for i in data.columns:
+        rename_names[i] = int(i)
+    data.rename(columns=rename_names,inplace=True)
+    return data
 
 def series_extractor(indicator, ind_data,method,direction='both',d=1):
     """
@@ -61,19 +76,19 @@ def missing_sids(indicator, ind_data):
     return len(list(set(SIDS)-set(ind_data.loc(axis=0)[pd.IndexSlice[indicator,]].index)))
     
 def missing_years(indicator,ind_data):
-    """Calcuates the number of missing years for this indicator
+    """Calcuates the number of years for which the indicator is not observed for more than sids_count SIDS
     returns:
-        missing years count 
-        missing years as list
-        actual years for which the indicator is observed
+        missing years count (count of years that have missing values for ALL SIDS under study, doesn't include sids that were never measured for this indicator)
+        missing years as list (years that have missing values for SIDS under study, doesn't include sids that were never measured for this indicator )
+        actual years (for which the indicator is observed for all SIDS under study, doesn't include sids that were never measured for this indicator) 
     """
     sumb = ind_data.loc(axis=0)[pd.IndexSlice[indicator,]]
     sumb=sumb.isna().sum(axis=0).sort_values()/sumb.shape[0]
-    return sumb[sumb>0.5].index.shape[0],sorted(sumb[sumb>0.5].index.tolist()), sorted(sumb[sumb<0.5].index.tolist())
+    #return sumb[sumb>0].index.shape[0],sorted(sumb[sumb>0].index.tolist()), sorted(sumb[sumb==0].index.tolist())
+    return sumb[sumb==1].index.shape[0],sorted(sumb[sumb>0].index.tolist()),sorted(sumb[sumb==0].index.tolist())
+def validity_check(ind_data,sids_count,years_count,target_year):
 
-def validity_check(ind_data,sids_count,years_count):
-
-    """ Returns indicators which satisfy certain amount of non-missing data
+    """ Returns indicators which satisfy certain amount of non-missing data. Uses the missing_years and missing_sids function to calculate values for each indicator
     Args:
         ind_data: indicatorData dataset
         sids_count: threshold determining number of SIDS that are never measured for an indicator
@@ -88,6 +103,7 @@ def validity_check(ind_data,sids_count,years_count):
     missing_years_list = []
     missing_years_count_list = []
     actual_years_list = []
+    target_year_is_missing = []
     try:
         indList = ind_data.index.levels[0]
     except:
@@ -101,18 +117,21 @@ def validity_check(ind_data,sids_count,years_count):
         indicators.append(i)
 
         try:
-            missing_sids_list.append(missing_sids(i,ind_data))
+            unobservedSIDS = missing_sids(i,ind_data)
+            missing_sids_list.append(unobservedSIDS)
             c,my,y = missing_years(i,ind_data)
             missing_years_count_list.append(c)
             missing_years_list.append(my)
             actual_years_list.append(y)
+            target_year_is_missing.append((target_year in my))
         except:
             missing_sids_list.append(50)
             missing_years_count_list.append(50)
             actual_years_list.append([])
             missing_years_list.append([])
-    validity = pd.DataFrame(data={"Indicator":indicators,"missing_sids":missing_sids_list,"missing_years_count":missing_years_count_list,"missing_years":missing_years_list, "available_years":actual_years_list})
-    #logging.info(validity.head(10))
+            target_year_is_missing.append(False)
+    validity = pd.DataFrame(data={"Indicator":indicators,"missing_sids":missing_sids_list,"missing_years_count":missing_years_count_list,"missing_years":missing_years_list, "available_years":actual_years_list,"target_validity":target_year_is_missing})
+    #logging.info(validity[["missing_sids","missing_years_count","target_validity"]].tail(10))
     return validity[(validity.missing_sids<sids_count) &(validity.missing_years_count<(len(ind_data.columns)/years_count))]
 
 def preprocessing(ind_data, predictors,target_year,target):
@@ -156,12 +175,12 @@ def preprocessing(ind_data, predictors,target_year,target):
     year = target_year
     #logging.info("data for preprocessing")
     #logging.info(data)
-    while (year-3) > min(2000,target_year-15): # hard coded
+    while (year-lag) > max(1970,target_year-window): # hard coded
         #logging.info("predictor columns")
         sub = data.loc(axis=1)[range(year-3,year)]
         #logging.info(sub.columns)
-        if year == target_year:
-            logging.info(sub)
+        #if year == target_year:
+        #    logging.info(sub)
         sub = pd.DataFrame(data=sub.to_numpy(), index=sub.index,columns=["lag 3","lag 2","lag 1"]).unstack("Indicator Code").swaplevel(axis=1).sort_index(axis=1)
         sub["window"] = year
         sub.set_index('window',append=True,inplace=True)
@@ -173,8 +192,8 @@ def preprocessing(ind_data, predictors,target_year,target):
         sub = pd.DataFrame(data=scaler.inverse_transform(imputer.transform(scaler.transform(sub)))
                         , columns=sub.columns,
                         index=sub.index)
-        if year == target_year:
-            logging.info(sub)
+        #if year == target_year:
+        #    logging.info(sub)
         
 
         restructured_data = pd.concat([restructured_data,sub])
@@ -192,8 +211,10 @@ def preprocessing(ind_data, predictors,target_year,target):
     #     for i in sub.index:
     #         if i not in target_sub.index:
     #             target_sub.loc[i,target_sub.columns[0]] = [np.nan]
-        #if year == target_year:
-        #    logging.info(target_sub)
+
+    #    if year == target_year:
+    #        logging.info(target_sub)
+            
         target_sub["window"] = year
         target_sub.set_index('window',append=True,inplace=True)
         restructured_target = pd.concat([restructured_target,target_sub])
@@ -355,39 +376,34 @@ def load_dataset():
 
 load_dataset()
 
-global valid_predictors
-valid_predictors = validity_check(indicatorData,n,m)
 
-def predictor_validity(target: str):
-    global valid_predictors
-    predictor_list = valid_predictors.Indicator.values.tolist()
+def predictor_validity(target: str, target_year: int):
+
+    predictor_list = validity_check(intColumn(indicatorData)[list(range(1970,target_year+1))],n,m,target_year).Indicator.values.tolist()
     if target in predictor_list:
         predictor_list.remove(target)
     return  predictor_list
 
-global valid_targets
-valid_targets = validity_check(indicatorData,50,1.25) #Temporary
 
-def target_validity():
-    global valid_targets
-    return valid_targets.Indicator.values.tolist()
+
+def target_validity(target_year: int):
+    checktargets = validity_check(intColumn(indicatorData)[list(range(1970,target_year+1))],ntarget,mtarget, target_year)
+    
+    return checktargets[checktargets.target_validity == True].Indicator.values.tolist()
+
+global valid_targets
+valid_targets = validity_check(indicatorData,ntarget,mtarget,None) #Temporary
 
 def year_validity(target: str):
     global valid_targets
-    years = valid_targets[valid_targets.Indicator ==target].available_years.values[0]
-    #logging.info(years)
+    years = valid_targets[valid_targets.Indicator ==target].missing_years.values[0]
     return years
 
 def train_predict(predictors,scheme, n_estimators, model_type,target,target_year,interval,ind_data=indicatorData):
     
-    data = ind_data.set_index(["Indicator Code","Country Code"]).sort_index(axis=1).dropna(axis=0,how='all')#.interpolate('linear')
+    data = intColumn(ind_data)
 
-    rename_names = dict()
-    for i in data.columns:
-        rename_names[i] = int(i)
-    data.rename(columns=rename_names,inplace=True)
-
-    valid_predictors = validity_check(ind_data,n,m)
+    valid_predictors = validity_check(data[list(range(1970,target_year+1))],n,m,target_year)
     #logging.info(valid_predictors.Indicator.values.tolist())
     if scheme == Schema.MANUAL:
         X_train,X_test,y_train,sample_weight = preprocessing(data, predictors,target_year,target)

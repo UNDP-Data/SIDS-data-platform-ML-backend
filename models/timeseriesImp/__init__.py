@@ -60,14 +60,14 @@ class ModelResponse(BaseDefinition):
     #feature_importance_pie: Optional[dict]
 
 @router.get('/targets')
-async def get_targets():
+async def get_targets(target_year: int):
 
-    return target_validity()
+    return target_validity(target_year)
 
 @router.get('/predictors')
-async def get_predictors(target: str):
+async def get_predictors(target: str, target_year: int):
 
-    return predictor_validity(target)
+    return predictor_validity(target,target_year)
 
 @router.get('/target_years')
 async def get_years(target: str):
