@@ -123,7 +123,7 @@ def validity_check(ind_data,sids_count,years_count,target_year):
             missing_years_count_list.append(c)
             missing_years_list.append(my)
             actual_years_list.append(y)
-            target_year_is_missing.append((target_year in my))
+            target_year_is_missing.append((target_year in my) | (unobservedSIDS > 0))
         except:
             missing_sids_list.append(50)
             missing_years_count_list.append(50)
