@@ -36,7 +36,11 @@ lag = 3 # How much past history of the predictors to consider for each window, m
 missingCount = 60/100 # Determines for a given indicator, how much of the SIDS under study (SIDS for which the indicator is observed at some point) have to be missing for year to count as a year where too much information is missing. When set to 1, only when all SIDS understudy are missing, will the year count as missing year in the missing_years function
 
 def intColumn(indData):
-    data = indData.set_index(["Indicator Code","Country Code"]).sort_index(axis=1).dropna(axis=0,how='all')#.interpolate('linear')
+    """Function for setting up indicatorData for pandas interpolate methods
+        Turns non-numeric columns to index, turns yeat column name type to int ("2020" -> 2020), 
+        and sorts years in ascending order (left to right) for interpolation
+    """
+    data = indData.set_index(["Indicator Code","Country Code"]).sort_index(axis=1).dropna(axis=0,how='all')
 
     rename_names = dict()
     for i in data.columns:
@@ -82,11 +86,12 @@ def missing_years(indicator,ind_data):
         missing years count (count of years that have missing values for more than 60% (missingCount constant) SIDS under study, doesn't include sids that were never measured for this indicator)
         missing years as list (years that have missing values for SIDS under study, doesn't include sids that were never measured for this indicator )
         actual years (for which the indicator is observed for all SIDS under study, doesn't include sids that were never measured for this indicator) 
+        target years (for which the indicator has some training data)
     """
     sumb = ind_data.loc(axis=0)[pd.IndexSlice[indicator,]]
     sumb=sumb.isna().sum(axis=0).sort_values()/sumb.shape[0]
     #return sumb[sumb>0].index.shape[0],sorted(sumb[sumb>0].index.tolist()), sorted(sumb[sumb==0].index.tolist())
-    return sumb[sumb> missingCount].index.shape[0],sorted(sumb[sumb>0].index.tolist()),sorted(sumb[sumb==0].index.tolist())
+    return sumb[sumb> missingCount].index.shape[0],sorted(sumb[sumb>0].index.tolist()),sorted(sumb[sumb==0].index.tolist()),sorted(sumb[sumb<1].index.tolist())
 def validity_check(ind_data,sids_count,years_count,target_year):
 
     """ Returns indicators which satisfy certain amount of non-missing data. Uses the missing_years and missing_sids function to calculate values for each indicator
@@ -106,6 +111,7 @@ def validity_check(ind_data,sids_count,years_count,target_year):
     missing_years_count_list = []
     actual_years_list = []
     target_year_is_missing = []
+    target_years = []
     try:
         indList = ind_data.index.levels[0]
     except:
@@ -121,19 +127,20 @@ def validity_check(ind_data,sids_count,years_count,target_year):
         try:
             unobservedSIDS = missing_sids(i,ind_data)
             missing_sids_list.append(unobservedSIDS)
-            c,my,y = missing_years(i,ind_data)
+            c,my,y,t = missing_years(i,ind_data)
             missing_years_count_list.append(c)
             missing_years_list.append(my)
             actual_years_list.append(y)
             target_year_is_missing.append((target_year in my) | (unobservedSIDS > 0))
+            target_years.append(t)
         except:
             missing_sids_list.append(50)
             missing_years_count_list.append(50)
             actual_years_list.append([])
             missing_years_list.append([])
             target_year_is_missing.append(False)
-    validity = pd.DataFrame(data={"Indicator":indicators,"missing_sids":missing_sids_list,"missing_years_count":missing_years_count_list,"missing_years":missing_years_list, "available_years":actual_years_list,"target_validity":target_year_is_missing})
-    #logging.info(validity[["missing_sids","missing_years_count","target_validity"]].tail(10))
+            target_years.append([])
+    validity = pd.DataFrame(data={"Indicator":indicators,"missing_sids":missing_sids_list,"missing_years_count":missing_years_count_list,"missing_years":missing_years_list, "available_years":actual_years_list,"target_validity":target_year_is_missing,"target_years":target_years})
     return validity[(validity.missing_sids<sids_count) &(validity.missing_years_count<(len(ind_data.columns)/years_count))]
 
 def preprocessing(ind_data, predictors,target_year,target):
@@ -151,7 +158,6 @@ def preprocessing(ind_data, predictors,target_year,target):
              window2  2006 2007 2008         2009
     
     Bug:  Here if a predictor is never measured for a particular SIDS country, it will be NaN for all the lags. The temporary solution will be to fill it with a standard imputer (or remove the country which reduces the number of valid SIDS for imputation)
- 
     Args:
         ind_data: indicatorData
         predictors: list of predictors indicator codes
@@ -178,11 +184,9 @@ def preprocessing(ind_data, predictors,target_year,target):
     window_counter =1
     
     year = target_year
-    #logging.info("data for preprocessing")
-    #logging.info(data)
-    while (year-lag) > max(1970,target_year-window): # hard coded
+    while (year-lag) >= max(1970,target_year-window): # hard coded
         # Subset indicatorData for the 3 lag years
-        sub = data.loc(axis=1)[range(year-3,year)]
+        sub = data.loc(axis=1)[range(year-lag,year)]
         # Restructure subset dataframe
         sub = pd.DataFrame(data=sub.to_numpy(), index=sub.index,columns=["lag 3","lag 2","lag 1"]).unstack("Indicator Code").swaplevel(axis=1).sort_index(axis=1)
         
@@ -237,7 +241,6 @@ def preprocessing(ind_data, predictors,target_year,target):
     # Merge based on predictor dataframe (here note that retructured_data has all the SIDS for all years in its index )
     training_data = restructured_data.merge(restructured_target,how='left',left_index=True,right_index=True)
     training_data = training_data.merge(sample_weight,how='left',left_index=True,right_index=True)
-    #logging.info(training_data[training_data.isna().any(axis=1)].index)
     # Split into training and prediction based on missingness in target
     X_train= training_data[training_data[(target,"target")].notna()]
     X_test = training_data[training_data[(target,"target")].isna()]
@@ -248,7 +251,6 @@ def preprocessing(ind_data, predictors,target_year,target):
     y_train = X_train.pop((target,"target"))
     # Subset prediction data for target_year only (no need to return non target years to frontend)
     X_test = X_test.loc(axis=0)[pd.IndexSlice[:,target_year]]
-    logging.info(X_test.index)
     return X_train,X_test,y_train,sample_weight
 
 def model_trainer(X_train, X_test, y_train, seed, n_estimators, model_type, interval,sample_weight):
@@ -391,10 +393,14 @@ def load_dataset():
 
 load_dataset()
 
+global modifiedData
+modifiedData = intColumn(indicatorData)
 
 def predictor_validity(target: str, target_year: int):
-
-    predictor_list = validity_check(intColumn(indicatorData)[list(range(max(1970,target_year-window),target_year+1))],n,m,target_year).Indicator.values.tolist()
+    """
+        For a given target indicator and target_year combination, generate a list of valid predictors
+    """
+    predictor_list = validity_check(modifiedData[list(range(max(1970,target_year-window),target_year+1))],n,m,target_year).Indicator.values.tolist()
     if target in predictor_list:
         predictor_list.remove(target)
     return  predictor_list
@@ -402,24 +408,37 @@ def predictor_validity(target: str, target_year: int):
 
 
 def target_validity(target_year: int):
-    checktargets = validity_check(intColumn(indicatorData)[list(range(max(1970,target_year-window),target_year+1))],ntarget,mtarget, target_year)
+    """
+        For the target year, generate a list of valid target indicators
+    """
+    checktargets = validity_check(modifiedData[list(range(max(1970,target_year-window),target_year+1))],ntarget,mtarget, target_year)
     
     return checktargets[checktargets.target_validity == True].Indicator.values.tolist()
 
 global valid_targets
-valid_targets = validity_check(indicatorData,ntarget,mtarget,None) #Temporary
+valid_targets = validity_check(modifiedData,ntarget,mtarget,None) #Temporary
 
 def year_validity(target: str):
+    """
+        For the indicator, generate a list of years for which the indicator can be the target of an imputation model
+    """
     global valid_targets
-    years = valid_targets[valid_targets.Indicator ==target].missing_years.values[0]
-    return years
+    targetData = valid_targets[valid_targets.Indicator ==target]
+    targetYears = targetData.target_years.values[0]
+    availableYears = targetData.available_years.values[0]
+    if len(targetYears) == 0: # If there are no years with training data, say indicator can never be a model target for any year
+        return []
+    elif len(targetYears) -len(availableYears) == 0: # if none of the SIDS under study are missing
+        if targetData.missing_sids == 0: # Check if there are any SIDS NOT understudy. If every SIDS is account for all the years, the indicator cannot be a target
+            if len(targetYears) == len(modifiedData.columns):
+                return []
+    else: # In any other case, return years for which the indicator has missing as well as observed values in the window of training (window = 15  YEARS). Here we also require that there be enough years for creating predictor lag.
+        return [i for i in modifiedData.columns if ((i >= (1970 + lag)) & (len(set(range(i-window,i+1)) & set(targetYears)) > 1))]
 
-def train_predict(predictors,scheme, n_estimators, model_type,target,target_year,interval,ind_data=indicatorData):
+def train_predict(predictors,scheme, n_estimators, model_type,target,target_year,interval,data=modifiedData):
     
-    data = intColumn(ind_data)
 
     valid_predictors = validity_check(data[list(range(max(1970,target_year-window),target_year+1))],n,m,target_year)
-    #logging.info(valid_predictors.Indicator.values.tolist())
     if scheme == Schema.MANUAL:
         X_train,X_test,y_train,sample_weight = preprocessing(data, predictors,target_year,target)
     elif scheme == Schema.AUTO:
