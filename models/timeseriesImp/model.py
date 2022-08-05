@@ -33,6 +33,7 @@ window = 15 # How much past history of the target to consider, measured in years
 
 lag = 3 # How much past history of the predictors to consider for each window, measured in years (size of lag in proprocessing)
 
+missingCount = 60/100 # Determines for a given indicator, how much of the SIDS under study (SIDS for which the indicator is observed at some point) have to be missing for year to count as a year where too much information is missing. When set to 1, only when all SIDS understudy are missing, will the year count as missing year in the missing_years function
 
 def intColumn(indData):
     data = indData.set_index(["Indicator Code","Country Code"]).sort_index(axis=1).dropna(axis=0,how='all')#.interpolate('linear')
@@ -78,21 +79,22 @@ def missing_sids(indicator, ind_data):
 def missing_years(indicator,ind_data):
     """Calcuates the number of years for which the indicator is not observed for more than sids_count SIDS
     returns:
-        missing years count (count of years that have missing values for ALL SIDS under study, doesn't include sids that were never measured for this indicator)
+        missing years count (count of years that have missing values for more than 60% (missingCount constant) SIDS under study, doesn't include sids that were never measured for this indicator)
         missing years as list (years that have missing values for SIDS under study, doesn't include sids that were never measured for this indicator )
         actual years (for which the indicator is observed for all SIDS under study, doesn't include sids that were never measured for this indicator) 
     """
     sumb = ind_data.loc(axis=0)[pd.IndexSlice[indicator,]]
     sumb=sumb.isna().sum(axis=0).sort_values()/sumb.shape[0]
     #return sumb[sumb>0].index.shape[0],sorted(sumb[sumb>0].index.tolist()), sorted(sumb[sumb==0].index.tolist())
-    return sumb[sumb==1].index.shape[0],sorted(sumb[sumb>0].index.tolist()),sorted(sumb[sumb==0].index.tolist())
+    return sumb[sumb> missingCount].index.shape[0],sorted(sumb[sumb>0].index.tolist()),sorted(sumb[sumb==0].index.tolist())
 def validity_check(ind_data,sids_count,years_count,target_year):
 
     """ Returns indicators which satisfy certain amount of non-missing data. Uses the missing_years and missing_sids function to calculate values for each indicator
     Args:
         ind_data: indicatorData dataset
         sids_count: threshold determining number of SIDS that are never measured for an indicator
-        years_count: indicator must have measurements for atleast 1/year_count of the total number of years in the indicatorData
+        years_count: indicator must have measurements for atleast 1/year_count of the total number of years in the indicatorData. 
+                     For the predictor this decides how much unecrtainity the first level imputation introduces. For the target, this decides how much data is available for supervised learning
     Returns:
         dataframe with valid indicators according to the threshold in the input arguments
     """
@@ -392,7 +394,7 @@ load_dataset()
 
 def predictor_validity(target: str, target_year: int):
 
-    predictor_list = validity_check(intColumn(indicatorData)[list(range(1970,target_year+1))],n,m,target_year).Indicator.values.tolist()
+    predictor_list = validity_check(intColumn(indicatorData)[list(range(max(1970,target_year-window),target_year+1))],n,m,target_year).Indicator.values.tolist()
     if target in predictor_list:
         predictor_list.remove(target)
     return  predictor_list
@@ -400,7 +402,7 @@ def predictor_validity(target: str, target_year: int):
 
 
 def target_validity(target_year: int):
-    checktargets = validity_check(intColumn(indicatorData)[list(range(1970,target_year+1))],ntarget,mtarget, target_year)
+    checktargets = validity_check(intColumn(indicatorData)[list(range(max(1970,target_year-window),target_year+1))],ntarget,mtarget, target_year)
     
     return checktargets[checktargets.target_validity == True].Indicator.values.tolist()
 
@@ -416,7 +418,7 @@ def train_predict(predictors,scheme, n_estimators, model_type,target,target_year
     
     data = intColumn(ind_data)
 
-    valid_predictors = validity_check(data[list(range(1970,target_year+1))],n,m,target_year)
+    valid_predictors = validity_check(data[list(range(max(1970,target_year-window),target_year+1))],n,m,target_year)
     #logging.info(valid_predictors.Indicator.values.tolist())
     if scheme == Schema.MANUAL:
         X_train,X_test,y_train,sample_weight = preprocessing(data, predictors,target_year,target)
