@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 
 from common.base_definition import BaseDefinition
 
-from models.timeseriesImp.model import  train_predict,predictor_validity,target_validity,year_validity
+from models.timeseriesImp.model import  train_predict,predictor_validity,target_validity,year_validity,check_year_validity,check_target_validity,check_predictor_validity,check_target_existence
 from models.timeseriesImp.enums import Schema
 
 router = APIRouter(
@@ -61,16 +61,18 @@ class ModelResponse(BaseDefinition):
 
 @router.get('/targets')
 async def get_targets(target_year: int):
-
+    check_year_validity(target_year)
     return target_validity(target_year)
 
 @router.get('/predictors')
 async def get_predictors(target: str, target_year: int):
-
+    check_year_validity(target_year)
+    check_target_validity(target_year,target)
     return predictor_validity(target,target_year)
 
 @router.get('/target_years')
 async def get_years(target: str):
+    check_target_existence(target)
     return year_validity(target)
 
 
@@ -78,12 +80,12 @@ async def get_years(target: str):
 @router.post('/predict', response_model=ModelResponse, openapi_extra={MAIN_ENDPOINT_TAG: True})
 async def train_validate_predict(req: TrainRequest):
     #received_time = int(time.time())
-    #check_year_validity(req.target_year)
+    check_year_validity(req.target_year)
     #check_dataset_validity(req.target_year, req.dataset)
-    #check_target_validity(req.target_year, req.dataset, req.target)
+    check_target_validity(req.target_year,req.target)
     if req.scheme == Schema.MANUAL:
         manual_predictors = req.manual_predictors
-        #check_predictors_validity(req.target_year, req.manual_predictors)
+        check_predictor_validity(req.target,req.target_year, req.manual_predictors)
 
     else:
         manual_predictors = req.number_predictor

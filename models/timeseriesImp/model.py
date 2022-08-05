@@ -404,7 +404,29 @@ def predictor_validity(target: str, target_year: int):
     if target in predictor_list:
         predictor_list.remove(target)
     return  predictor_list
+def check_predictor_validity(target,target_year, predictors):
+    target_year = int(target_year)
+    validPredictors = predictor_validity(target, target_year)
+    if len(set(predictors)-set(validPredictors)) > 0:
+        raise HTTPException(status_code=422, detail=Error.INVALID_PREDICTOR.format(list(set(predictors)-set(validPredictors))).value)
 
+def check_year_validity(year):
+    """Check year validity"""
+    year = int(year)
+    supported_years = [i for i in modifiedData.columns if i>= 1970+lag]
+    if year not in supported_years:
+        raise HTTPException(status_code=422, detail=Error.INVALID_TARGET_YEAR.format(supported_years[0], supported_years[-1]).value)
+
+def check_target_existence(target):
+    if target not in indicatorMeta["Indicator Code"].values.tolist():
+        raise HTTPException(status_code=422, detail=Error.NONEXISTENT_TARGET.value)
+
+
+def check_target_validity(target_year,target):
+    target_year = int(target_year)
+    validTargets = target_validity(target_year)
+    if target not in validTargets:
+        raise HTTPException(status_code=422, detail=Error.INVALID_TARGET.value)
 
 
 def target_validity(target_year: int):
@@ -434,9 +456,16 @@ def year_validity(target: str):
                 return []
     else: # In any other case, return years for which the indicator has missing as well as observed values in the window of training (window = 15  YEARS). Here we also require that there be enough years for creating predictor lag.
         return [i for i in modifiedData.columns if ((i >= (1970 + lag)) & (len(set(range(i-window,i+1)) & set(targetYears)) > 1))]
+def check_year_validity(year):
+    """Check year validity for get_targets endpoint"""
+    supported_years = [i for i in modifiedData.columns if i>= 1970+lag]
+    if year not in supported_years:
+        raise HTTPException(status_code=422, detail=Error.INVALID_TARGET_YEAR.format(supported_years[0], supported_years[-1]).value)
+
 
 def train_predict(predictors,scheme, n_estimators, model_type,target,target_year,interval,data=modifiedData):
     
+    target_year = int(target_year)
 
     valid_predictors = validity_check(data[list(range(max(1970,target_year-window),target_year+1))],n,m,target_year)
     if scheme == Schema.MANUAL:
